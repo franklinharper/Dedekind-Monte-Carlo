@@ -1,55 +1,87 @@
 package com.franklinharper;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 
 public class DedekindMonteCarlo {
 
+    // TODO
+    // fix: calulation of std. dev. for large numbers
+    // add korshunov's formula to the results
+    // add known values of D(n) to the results
+    // format output for including in a table
+    // send bill
+    // wait for further instructions from Dad
+    private static final boolean TRACE_ON = false;
+    private static final MathContext MATH_CONTEXT = new MathContext( 10, RoundingMode.HALF_DOWN );
+    private static final double DEDEKIND8 = 56130437228687557907788.0;
+
     public static void main( String[] args ) {
+        DedekindMonteCarlo.dedekindEstimation( 7, 10000 );
     }
 
-    public static DedekindResult dedekindEstimation( int n, int nIterations ) {
+    public static final BigDecimal BD2 = new BigDecimal( 2 );
+
+    public static void dedekindEstimation( int n, int nIterations ) {
+        System.out.println( "n: " + n );
         int k;
+        BigDecimal multiplier;
         if( isEven( n ) ) {
             k = n / 2;
+            multiplier = new BigDecimal( 2 ).pow( binomial( n, k ) );
         } else {
             k = (n - 1) / 2;
+            multiplier = new BigDecimal( 2 ).pow( binomial( n, k ) ).multiply( new BigDecimal( 2 ) );
         }
+        System.out.println( "k: " + k );
 
         Random random = new Random();
-
-        long nChooseK = binomial( n, k );
+        trace( "multiplier: " + multiplier );
         int[] middleRank = generateNTuplesOfRank_K( n, k );
         int[] aboveMiddle = generateNTuplesOfRank_K( n, k + 1 );
         int[] belowMiddle = generateNTuplesOfRank_K( n, k - 1 );
-        double[] sampleValues = new double[ nIterations ];
+        BigDecimal[] sampleValues = new BigDecimal[ nIterations ];
         for( int i = 0; i < nIterations; i++ ) {
             int[] sample = randomSample( random, middleRank );
-            double X = calculateX( n, aboveMiddle, sample );
-            double Y = calculateY( n, belowMiddle, sample );
-            sampleValues[ i ] = Math.pow( 2, X + Y ) * nChooseK;
-            if( isEven( n ) ) {
-                sampleValues[ i ] = sampleValues[ i ] * 2;
-            }
-//            System.out.println( "sampleValue " + i + ": " + sampleValues[ i ] );
+            trace( "sample " + Arrays.toString( sample ) );
+            int X = calculateX( n, aboveMiddle, sample );
+            trace( "X: " + X );
+            int Y = calculateY( n, belowMiddle, sample );
+            trace( "Y: " + Y );
+            // 2^(X + Y) * multiplier
+            sampleValues[ i ] = BD2.pow( X + Y ).multiply( multiplier );
+            trace( "sampleValue " + i + ": " + sampleValues[ i ] );
         }
 
-        double sumSampleValues = 0;
+        BigDecimal sumSampleValues = new BigDecimal( 0 );
         for( int i = 0; i < sampleValues.length; i++ ) {
-            sumSampleValues = sumSampleValues + sampleValues[ i ];
+            sumSampleValues = sumSampleValues.add( sampleValues[ i ] );
         }
-        double estimate = sumSampleValues / n;
+        BigDecimal estimate = sumSampleValues.divide( new BigDecimal( sampleValues.length ), MATH_CONTEXT );
 
-        double sumOfSquaresOfDifferences = 0;
+        BigDecimal sumOfSquaresOfDifferences = new BigDecimal( 0 );
         for( int i = 0; i < sampleValues.length; i++ ) {
-            double difference = sampleValues[ i ] - estimate;
-            sumOfSquaresOfDifferences = difference * difference;
+            BigDecimal difference = sampleValues[ i ].subtract( estimate );
+            sumOfSquaresOfDifferences = difference.multiply( difference );
         }
-        double variance = sumOfSquaresOfDifferences / ( n - 1 );
+        BigDecimal variance = sumOfSquaresOfDifferences.divide( new BigDecimal( sampleValues.length - 1 ), MATH_CONTEXT );
+//        BigDecimal standardDeviation = bigSqrt( variance );
+
         System.out.println( "iterations: " + nIterations );
         System.out.println( "estimate for D(" + n + "): " + estimate );
-        System.out.println( "variance : " + variance );
-        return new DedekindResult( estimate, variance );
+//        System.out.println( "real value for D(" + n + "): " + DEDEKIND8 );
+//        System.out.println( "standard deviation: " + standardDeviation.setScale( -1, RoundingMode.HALF_DOWN ) );
+//        return new DedekindResult( estimate, variance );
+    }
+
+    private static void trace( String s ) {
+        if( TRACE_ON ) {
+            System.out.println( s );
+        }
     }
 
     /**
@@ -180,7 +212,7 @@ public class DedekindMonteCarlo {
         return result;
     }
 
-    public static long binomial( long total, long choose ) {
+    public static int binomial( long total, long choose ) {
         if( total < choose )
             return 0;
         if( choose == 0 || choose == total )
@@ -188,13 +220,46 @@ public class DedekindMonteCarlo {
         return binomial( total - 1, choose - 1 ) + binomial( total - 1, choose );
     }
 
-    public static class DedekindResult {
-        double estimate;
-        double variance;
+//    public static class DedekindResult {
+//        double estimate;
+//        double variance;
+//
+//        public DedekindResult( double estimate, double variance ) {
+//            this.estimate = estimate;
+//            this.stdDeviation = variance;
+//        }
+//    }
 
-        public DedekindResult( double estimate, double variance ) {
-            this.estimate = estimate;
-            this.variance = variance;
+    private static final BigDecimal SQRT_DIG = new BigDecimal(150);
+    private static final BigDecimal SQRT_PRE = new BigDecimal(10).pow(SQRT_DIG.intValue());
+
+    /**
+     * Private utility method used to compute the square root of a BigDecimal.
+     *
+     * @author Luciano Culacciatti
+     * @url http://www.codeproject.com/Tips/257031/Implementing-SqrtRoot-in-BigDecimal
+     */
+    private static BigDecimal sqrtNewtonRaphson  (BigDecimal c, BigDecimal xn, BigDecimal precision){
+        BigDecimal fx = xn.pow(2).add(c.negate());
+        BigDecimal fpx = xn.multiply(new BigDecimal(2));
+        BigDecimal xn1 = fx.divide(fpx,2*SQRT_DIG.intValue(),RoundingMode.HALF_DOWN);
+        xn1 = xn.add(xn1.negate());
+        BigDecimal currentSquare = xn1.pow(2);
+        BigDecimal currentPrecision = currentSquare.subtract(c);
+        currentPrecision = currentPrecision.abs();
+        if (currentPrecision.compareTo(precision) <= -1){
+            return xn1;
         }
+        return sqrtNewtonRaphson(c, xn1, precision);
+    }
+
+    /**
+     * Uses Newton Raphson to compute the square root of a BigDecimal.
+     *
+     * @author Luciano Culacciatti
+     * @url http://www.codeproject.com/Tips/257031/Implementing-SqrtRoot-in-BigDecimal
+     */
+    public static BigDecimal bigSqrt(BigDecimal c){
+        return sqrtNewtonRaphson(c,new BigDecimal(1), new BigDecimal( 10 ));
     }
 }

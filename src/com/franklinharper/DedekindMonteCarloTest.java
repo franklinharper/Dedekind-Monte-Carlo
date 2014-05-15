@@ -153,9 +153,4 @@ public class DedekindMonteCarloTest {
         assertEquals( 6435, DedekindMonteCarlo.binomial( 15, 8 ) );
     }
 
-    @Test
-    public void testDedekindEstimation() {
-        DedekindMonteCarlo.dedekindEstimation( 4, 10 );
-    }
-
 }
