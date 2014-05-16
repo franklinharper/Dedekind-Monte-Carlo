@@ -11,75 +11,112 @@ public class DedekindMonteCarlo {
 
     // TODO
     // add korshunov's formula to the results
-    // add known values of D(n) to the results
+    // add ratio between kurshonov D(n). The ratio should go to 1
+    // add timing information
     // format output for including in a table
     // send bill
     // fix: calulation of std. dev. for large numbers
 
     private static final boolean TRACE = false;
     private static final MathContext MATH_CONTEXT = new MathContext( 10, RoundingMode.HALF_DOWN );
-    private static final double DEDEKIND8 = 56130437228687557907788.0;
+    private static final double[] DEDEKIND_KNOWN_VALUES = {
+        2,
+        3,
+        6,
+        20,
+        168,
+        7581,
+        7828354,
+        2414682040998.0,
+        56130437228687557907788.0 };
 
     public static void main( String[] args ) {
-        DedekindMonteCarlo.dedekindEstimation( 7, 10000 );
+        DedekindMonteCarlo.dedekindEstimation( 5, 1000000 );
     }
 
-    public static final BigDecimal BD2 = new BigDecimal( 2 );
+    public static final BigDecimal TWO = new BigDecimal( 2 );
 
     public static void dedekindEstimation( int n, int nIterations ) {
         System.out.println( "n: " + n );
         int k;
-        BigDecimal multiplier;
-        if( isEven( n ) ) {
-            k = n / 2;
-            multiplier = new BigDecimal( 2 ).pow( binomial( n, k ) );
+        if( isOdd( n ) ) {
+            k = ( n - 1 ) / 2;
         } else {
-            k = (n - 1) / 2;
-            multiplier = new BigDecimal( 2 ).pow( binomial( n, k ) ).multiply( new BigDecimal( 2 ) );
+            k = n / 2;
         }
         System.out.println( "k: " + k );
+        BigDecimal multiplier = new BigDecimal( 2 ).pow( binomial( n, k ) );
+        System.out.println( "multiplier: " + multiplier );
 
         Random random = new Random();
-        trace( "multiplier: " + multiplier );
         int[] middleRank = generateNTuplesOfRank_K( n, k );
         int[] aboveMiddle = generateNTuplesOfRank_K( n, k + 1 );
         int[] belowMiddle = generateNTuplesOfRank_K( n, k - 1 );
-        BigDecimal[] sampleValues = new BigDecimal[ nIterations ];
+        long[] sampleValues = new long[ nIterations ];
         for( int i = 0; i < nIterations; i++ ) {
-            int[] sample = randomSample( random, middleRank );
-            trace( "sample " + Arrays.toString( sample ) );
-            int X = calculateX( n, aboveMiddle, sample );
+            int[] sampleSet = randomSample( random, middleRank );
+            trace( "sample " + Arrays.toString( sampleSet ) );
+            int X = calculateX( n, aboveMiddle, sampleSet );
             trace( "X: " + X );
-            int Y = calculateY( n, belowMiddle, sample );
+            int Y = calculateY( n, belowMiddle, sampleSet );
             trace( "Y: " + Y );
-            // 2^(X + Y) * multiplier
-            sampleValues[ i ] = BD2.pow( X + Y ).multiply( multiplier );
+            long sample = pow2( X + Y );
+            if( isOdd( n ) ) {
+                // When n is odd multiply by 2 to account for the 2 rows which are
+                // which are just above and below the "middle" and then subtract
+                // the intersection of the two sets, so that it will not be counted twice.
+//                sample = sample * 2 - pow2( X );
+                sample = sample * 2;
+            }
+            sampleValues[ i ] = sample;
             trace( "sampleValue " + i + ": " + sampleValues[ i ] );
         }
 
         BigDecimal sumSampleValues = new BigDecimal( 0 );
         for( int i = 0; i < sampleValues.length; i++ ) {
-            sumSampleValues = sumSampleValues.add( sampleValues[ i ] );
+            sumSampleValues = sumSampleValues.add( new BigDecimal( sampleValues[ i ] ) );
         }
-        BigDecimal estimate = sumSampleValues.divide( new BigDecimal( sampleValues.length ), MATH_CONTEXT );
+        // estimate = ( sumSamples * multiplier ) / numberOfSamples
+        BigDecimal estimate =
+            sumSampleValues.multiply( multiplier ).divide( new BigDecimal( sampleValues.length ), MATH_CONTEXT );
 
-        BigDecimal sumOfSquaresOfDifferences = new BigDecimal( 0 );
-        for( int i = 0; i < sampleValues.length; i++ ) {
-            BigDecimal difference = sampleValues[ i ].subtract( estimate );
-            sumOfSquaresOfDifferences = difference.multiply( difference );
-        }
-        BigDecimal variance = sumOfSquaresOfDifferences.divide( new BigDecimal( sampleValues.length - 1 ), MATH_CONTEXT );
+//        BigDecimal sumOfSquaresOfDifferences = new BigDecimal( 0 );
+//        for( int i = 0; i < sampleValues.length; i++ ) {
+//            BigDecimal difference = new BigDecimal( sampleValues[ i ] ).subtract( estimate );
+//            sumOfSquaresOfDifferences = difference.multiply( difference );
+//        }
+//        BigDecimal variance = sumOfSquaresOfDifferences.divide( new BigDecimal( sampleValues.length - 1 ), MATH_CONTEXT );
 //        BigDecimal standardDeviation = bigSqrt( variance );
 
-        System.out.println( "iterations: " + nIterations );
-        System.out.println( "estimate for D(" + n + "): " + estimate );
+        System.out.format( "iterations: %4.0E\n", (double) nIterations );
+        if( n < DEDEKIND_KNOWN_VALUES.length ) {
+            System.out.format( "D(%d): %s (known value)\n", n, sciFormat( DEDEKIND_KNOWN_VALUES[ n ] ) );
+            System.out.format( "ED(%d): %s (estimate for D(%d))\n", n, sciFormat( estimate.doubleValue() ), n );
+            System.out.format(
+                "ED(%d) / D(%d): %s\n",
+                n,
+                n,
+                estimate.divide( new BigDecimal( DEDEKIND_KNOWN_VALUES[ n ] ), MATH_CONTEXT ) );
+        } else {
+            System.out.println( "estimate for D(" + n + "): " + estimate );
+        }
 //        System.out.println( "real value for D(" + n + "): " + DEDEKIND8 );
 //        System.out.println( "standard deviation: " + standardDeviation.setScale( -1, RoundingMode.HALF_DOWN ) );
 //        return new DedekindResult( estimate, variance );
     }
 
+    private static String sciFormat( double d ) {
+        return String.format( "%E", d );
+    }
+
+    private static long pow2( int integer ) {
+        // Shifting all the bits left by one position multiplies by 2.
+        // This works iff no high order bits are shifted out.
+        return 1l << ( integer );
+    }
+
     private static void trace( String s ) {
-        if( TRACE_ON ) {
+        if( TRACE ) {
             System.out.println( s );
         }
     }
@@ -188,8 +225,8 @@ public class DedekindMonteCarlo {
         return randomSample;
     }
 
-    private static boolean isEven( int integer ) {
-        if( ( integer & 1 ) == 0 ) {
+    private static boolean isOdd( int integer ) {
+        if( ( integer & 1 ) == 1 ) {
             return true;
         } else {
             return false;
@@ -211,6 +248,17 @@ public class DedekindMonteCarlo {
         }
         return result;
     }
+
+//    def remember logKorshunov(n)
+//    n2 = n sdiv 2
+//    if n smod 2==0
+//        x = Math.log(2)*Math.binom(n,n2)
+//        x = x+Math.binom(n,n2+1)*(2^(-n2)+n^2*2^(-n-5)-n*2^(-n-4))
+//    else
+//        x = Math.log(2)*(Math.binom(n,n2)+1)
+//        x = x+Math.binom(n,n2+1)*(2^(-n2-1)+n^2*2^(-n-4))
+//        x = x+Math.binom(n,n2+2)*(2^(-n2-2)-n^2*2^(-n-6)-n*2^(-n-3))
+//    return x
 
     public static int binomial( long total, long choose ) {
         if( total < choose )
