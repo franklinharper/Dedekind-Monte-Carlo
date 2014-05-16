@@ -10,13 +10,13 @@ import java.util.Random;
 public class DedekindMonteCarlo {
 
     // TODO
-    // fix: calulation of std. dev. for large numbers
     // add korshunov's formula to the results
     // add known values of D(n) to the results
     // format output for including in a table
     // send bill
-    // wait for further instructions from Dad
-    private static final boolean TRACE_ON = false;
+    // fix: calulation of std. dev. for large numbers
+
+    private static final boolean TRACE = false;
     private static final MathContext MATH_CONTEXT = new MathContext( 10, RoundingMode.HALF_DOWN );
     private static final double DEDEKIND8 = 56130437228687557907788.0;
 
