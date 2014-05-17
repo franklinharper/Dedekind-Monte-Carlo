@@ -3,6 +3,7 @@ package com.franklinharper;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
@@ -12,7 +13,7 @@ public class DedekindMonteCarlo {
     // TODO
     // add korshunov's formula to the results
     // format output for including in a table
-    // send bill
+    // send bill 3.5 days ( tues., wed, 1/2 thur., Fri May 16)
     // fix: calulation of std. dev. for large numbers
 
     private static final boolean TRACE = false;
@@ -37,15 +38,15 @@ public class DedekindMonteCarlo {
     public static void dedekindEstimation( int n, int nIterations ) {
         final long startTime = System.currentTimeMillis();
         System.out.println( "n: " + n );
+        System.out.format( "iterations: %4.0E\n", (double) nIterations );
+
         int k;
         if( isOdd( n ) ) {
             k = ( n - 1 ) / 2;
         } else {
             k = n / 2;
         }
-        System.out.println( "k: " + k );
-        BigDecimal multiplier = new BigDecimal( 2 ).pow( binomial( n, k ) );
-        System.out.println( "multiplier: " + multiplier );
+        trace( "k: " + k );
 
         Random random = new Random();
         int[] middleRank = generateNTuplesOfRank_K( n, k );
@@ -74,7 +75,8 @@ public class DedekindMonteCarlo {
         for( int i = 0; i < sampleValues.length; i++ ) {
             sumSampleValues = sumSampleValues.add( new BigDecimal( sampleValues[ i ] ) );
         }
-        // estimate = ( sumSamples * multiplier ) / numberOfSamples
+        BigDecimal nChooseK = new BigDecimal( 2 ).pow( binomial( n, k ) );
+        trace( "nChooseK: " + nChooseK );
         BigDecimal estimate =
             sumSampleValues.multiply( multiplier ).divide( new BigDecimal( sampleValues.length ), MATH_CONTEXT );
 
@@ -102,8 +104,10 @@ public class DedekindMonteCarlo {
             n,
             n,
             referenceValue.divide( estimate, MATH_CONTEXT ) );
-//        System.out.println( "standard deviation: " + standardDeviation.setScale( -1, RoundingMode.HALF_DOWN ) );
-//        return new DedekindResult( estimate, variance );
+        System.out.format( "sample standard deviation: %s\n", scientificFormat( standardDeviation ) );
+    }
+
+    private static void printElapsedTime( final long startTime ) {
         long ellapsedMillis = System.currentTimeMillis() - startTime;
         long ms = ellapsedMillis % 1000;
         long s = (ellapsedMillis / 1000) % 60;
@@ -319,4 +323,11 @@ public class DedekindMonteCarlo {
     public static BigDecimal bigSqrt(BigDecimal c){
         return sqrtNewtonRaphson(c,new BigDecimal(1), new BigDecimal( 10 ));
     }
+
+
+    private static final DecimalFormat BD_SCIENTIFIC_FORMAT = new DecimalFormat("#.######E0");
+    public static String scientificFormat( BigDecimal bd ) {
+        return BD_SCIENTIFIC_FORMAT.format(bd);
+    }
+
 }
