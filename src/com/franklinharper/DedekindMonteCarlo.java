@@ -71,24 +71,34 @@ public class DedekindMonteCarlo {
             trace( "sampleValue " + i + ": " + sampleValues[ i ] );
         }
 
-        BigDecimal sumSampleValues = new BigDecimal( 0 );
+        // The estimated D(n) is ( sumSamples * nChooseK ) / numberOfSamples
+        double sumSampleValues = 0;
         for( int i = 0; i < sampleValues.length; i++ ) {
-            sumSampleValues = sumSampleValues.add( new BigDecimal( sampleValues[ i ] ) );
+            sumSampleValues = sumSampleValues + sampleValues[ i ];
         }
         BigDecimal nChooseK = new BigDecimal( 2 ).pow( binomial( n, k ) );
         trace( "nChooseK: " + nChooseK );
         BigDecimal estimate =
-            sumSampleValues.multiply( multiplier ).divide( new BigDecimal( sampleValues.length ), MATH_CONTEXT );
+            new BigDecimal( sumSampleValues ).multiply( nChooseK ).divide( new BigDecimal( sampleValues.length ), MATH_CONTEXT );
 
-//        BigDecimal sumOfSquaresOfDifferences = new BigDecimal( 0 );
-//        for( int i = 0; i < sampleValues.length; i++ ) {
-//            BigDecimal difference = new BigDecimal( sampleValues[ i ] ).subtract( estimate );
-//            sumOfSquaresOfDifferences = difference.multiply( difference );
-//        }
-//        BigDecimal variance = sumOfSquaresOfDifferences.divide( new BigDecimal( sampleValues.length - 1 ), MATH_CONTEXT );
-//        BigDecimal standardDeviation = bigSqrt( variance );
+        BigDecimal standardDeviation = standardDeviation( sampleValues, estimate );
 
-        System.out.format( "iterations: %4.0E\n", (double) nIterations );
+        printResults( n, estimate, standardDeviation );
+        printElapsedTime( startTime );
+    }
+
+    private static BigDecimal standardDeviation( long[] sampleValues, BigDecimal estimate ) {
+        BigDecimal sumOfSquaresOfDifferences = new BigDecimal( 0 );
+        for( int i = 0; i < sampleValues.length; i++ ) {
+            BigDecimal difference = new BigDecimal( sampleValues[ i ] ).subtract( estimate );
+            sumOfSquaresOfDifferences = difference.multiply( difference );
+        }
+        BigDecimal variance = sumOfSquaresOfDifferences.divide( new BigDecimal( sampleValues.length - 1 ), MATH_CONTEXT );
+        BigDecimal standardDeviation = bigSqrt( variance );
+        return standardDeviation;
+    }
+
+    private static void printResults( int n, BigDecimal estimate, BigDecimal standardDeviation ) {
         BigDecimal referenceValue;
         if( n < DEDEKIND_KNOWN_VALUES.length ) {
             referenceValue = new BigDecimal( DEDEKIND_KNOWN_VALUES[ n ] );
