@@ -11,8 +11,6 @@ public class DedekindMonteCarlo {
 
     // TODO
     // add korshunov's formula to the results
-    // add ratio between kurshonov D(n). The ratio should go to 1
-    // add timing information
     // format output for including in a table
     // send bill
     // fix: calulation of std. dev. for large numbers
@@ -31,12 +29,13 @@ public class DedekindMonteCarlo {
         56130437228687557907788.0 };
 
     public static void main( String[] args ) {
-        DedekindMonteCarlo.dedekindEstimation( 5, 1000000 );
+        DedekindMonteCarlo.dedekindEstimation( 8, 1000000 );
     }
 
     public static final BigDecimal TWO = new BigDecimal( 2 );
 
     public static void dedekindEstimation( int n, int nIterations ) {
+        final long startTime = System.currentTimeMillis();
         System.out.println( "n: " + n );
         int k;
         if( isOdd( n ) ) {
@@ -88,24 +87,29 @@ public class DedekindMonteCarlo {
 //        BigDecimal standardDeviation = bigSqrt( variance );
 
         System.out.format( "iterations: %4.0E\n", (double) nIterations );
+        BigDecimal referenceValue;
         if( n < DEDEKIND_KNOWN_VALUES.length ) {
-            System.out.format( "D(%d): %s (known value)\n", n, sciFormat( DEDEKIND_KNOWN_VALUES[ n ] ) );
-            System.out.format( "ED(%d): %s (estimate for D(%d))\n", n, sciFormat( estimate.doubleValue() ), n );
-            System.out.format(
-                "ED(%d) / D(%d): %s\n",
-                n,
-                n,
-                estimate.divide( new BigDecimal( DEDEKIND_KNOWN_VALUES[ n ] ), MATH_CONTEXT ) );
+            referenceValue = new BigDecimal( DEDEKIND_KNOWN_VALUES[ n ] );
+            System.out.format( "RD(%d): %s (Reference Dedekind number, exact value)\n", n, referenceValue );
         } else {
-            System.out.println( "estimate for D(" + n + "): " + estimate );
+//            referenceValue = korshunov( n );
+            referenceValue = new BigDecimal( 0 ); // placeholder value
+            System.out.format( "RD(%d): %s (Reference Dedekind number, Korshunov estimation)\n", n, referenceValue );
         }
-//        System.out.println( "real value for D(" + n + "): " + DEDEKIND8 );
+        System.out.format( "ED(%d): %s (estimate for D(%d))\n", n, estimate, n );
+        System.out.format(
+            "RD(%d) / ED(%d): %s\n",
+            n,
+            n,
+            referenceValue.divide( estimate, MATH_CONTEXT ) );
 //        System.out.println( "standard deviation: " + standardDeviation.setScale( -1, RoundingMode.HALF_DOWN ) );
 //        return new DedekindResult( estimate, variance );
-    }
-
-    private static String sciFormat( double d ) {
-        return String.format( "%E", d );
+        long ellapsedMillis = System.currentTimeMillis() - startTime;
+        long ms = ellapsedMillis % 1000;
+        long s = (ellapsedMillis / 1000) % 60;
+        long m = (ellapsedMillis / (1000 * 60)) % 60;
+        long h = (ellapsedMillis / (1000 * 60 * 60)) % 24;
+        System.out.format("Total execution time %dh:%dm:%ds:%dms", h, m, s, ms );
     }
 
     private static long pow2( int integer ) {
@@ -248,16 +252,22 @@ public class DedekindMonteCarlo {
         return result;
     }
 
-//    def remember logKorshunov(n)
-//    n2 = n sdiv 2
-//    if n smod 2==0
-//        x = Math.log(2)*Math.binom(n,n2)
+//    public static BigDecimal korshunov( int n ) {
+//    BigDecimal x;
+//    if( isOdd( n ) ) {
+////        x = Math.log(2)*(Math.binom(n,n2)+1)
+////        x = x+Math.binom(n,n2+1)*(2^(-n2-1)+n^2*2^(-n-4))
+////        x = x+Math.binom(n,n2+2)*(2^(-n2-2)-n^2*2^(-n-6)-n*2^(-n-3));
+//    } else {
+//        int k = n / 2;
+//        double binomialFactor = Math.pow( 2, binomial( n, k ) );
+//        double exponentialFactor = BigDecimal..exp( a );
+//
+//        x = TWO.multiply( new BigDecimal( binomial(n,n2) ) );
 //        x = x+Math.binom(n,n2+1)*(2^(-n2)+n^2*2^(-n-5)-n*2^(-n-4))
-//    else
-//        x = Math.log(2)*(Math.binom(n,n2)+1)
-//        x = x+Math.binom(n,n2+1)*(2^(-n2-1)+n^2*2^(-n-4))
-//        x = x+Math.binom(n,n2+2)*(2^(-n2-2)-n^2*2^(-n-6)-n*2^(-n-3))
-//    return x
+//    }
+//    return x;
+//    }
 
     public static int binomial( long total, long choose ) {
         if( total < choose )
