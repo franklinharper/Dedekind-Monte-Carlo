@@ -65,8 +65,7 @@ public class DedekindMonteCarlo {
                 // When n is odd multiply by 2 to account for the 2 rows which are
                 // which are just above and below the "middle" and then subtract
                 // the intersection of the two sets, so that it will not be counted twice.
-//                sample = sample * 2 - pow2( X );
-                sample = sample * 2;
+                sample = sample * 2 - pow2( X );
             }
             sampleValues[ i ] = sample;
             trace( "sampleValue " + i + ": " + sampleValues[ i ] );
