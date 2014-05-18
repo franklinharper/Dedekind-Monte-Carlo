@@ -1,12 +1,16 @@
 package com.franklinharper;
 
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
+
+import org.apfloat.Apfloat;
+import org.apfloat.ApfloatMath;
+import org.apfloat.Apint;
+import org.apfloat.ApintMath;
 
 public class DedekindMonteCarlo {
 
@@ -17,28 +21,32 @@ public class DedekindMonteCarlo {
     // fix: calulation of std. dev. for large numbers
 
     private static final boolean TRACE = false;
-    private static final MathContext MATH_CONTEXT = new MathContext( 10, RoundingMode.HALF_DOWN );
-    private static final double[] DEDEKIND_KNOWN_VALUES = {
-        2,
-        3,
-        6,
-        20,
-        168,
-        7581,
-        7828354,
-        2414682040998.0,
-        56130437228687557907788.0 };
+
+    private static final Apint[] DEDEKIND_KNOWN_VALUES = {
+        new Apint( "2" ),
+        new Apint( "3" ),
+        new Apint( "6" ),
+        new Apint( "20" ),
+        new Apint( "168" ),
+        new Apint( "7581" ),
+        new Apint( "7828354" ),
+        new Apint( "2414682040998" ),
+        new Apint( "56130437228687557907788" ), };
+
+    public static final Apint TWO = new Apint( 2 );
 
     public static void main( String[] args ) {
-        DedekindMonteCarlo.dedekindEstimation( 8, 1000000 );
+        if( !TRACE ) {
+            printColumnHeaders();
+        }
+        DedekindMonteCarlo.dedekindEstimation( 5, 10000000 );
     }
 
-    public static final BigDecimal TWO = new BigDecimal( 2 );
 
     public static void dedekindEstimation( int n, int nIterations ) {
         final long startTime = System.currentTimeMillis();
-        System.out.println( "n: " + n );
-        System.out.format( "iterations: %4.0E\n", (double) nIterations );
+        trace( "n: " + n );
+        trace( String.format( "iterations: %4.0E", (double) nIterations ) );
 
         int k;
         if( isOdd( n ) ) {
@@ -72,58 +80,73 @@ public class DedekindMonteCarlo {
         }
 
         // The estimated D(n) is ( sumSamples * nChooseK ) / numberOfSamples
-        double sumSampleValues = 0;
+        Apint sumSampleValues = Apint.ZERO;
         for( int i = 0; i < sampleValues.length; i++ ) {
-            sumSampleValues = sumSampleValues + sampleValues[ i ];
+            sumSampleValues = sumSampleValues.add( new Apint( sampleValues[ i ] ) );
         }
-        BigDecimal nChooseK = new BigDecimal( 2 ).pow( binomial( n, k ) );
-        trace( "nChooseK: " + nChooseK );
-        BigDecimal estimate =
-            new BigDecimal( sumSampleValues ).multiply( nChooseK ).divide( new BigDecimal( sampleValues.length ), MATH_CONTEXT );
+        Apint multiplier = ApintMath.pow( TWO, binomial( n, k ) );
+        trace( "multiplier: " + multiplier );
+        Apint estimate = sumSampleValues.multiply( multiplier ).divide( new Apint( sampleValues.length ) );
 
-        BigDecimal standardDeviation = standardDeviation( sampleValues, estimate );
+//        Apfloat standardDeviation = standardDeviation( sampleValues, estimate );
+      Apfloat standardDeviation = Apfloat.ZERO;
 
-        printResults( n, estimate, standardDeviation );
-        printElapsedTime( startTime );
+
+        long elapsedMillis = System.currentTimeMillis() - startTime;
+        printResults( n, estimate, standardDeviation, nIterations, elapsedMillis );
     }
 
-    private static BigDecimal standardDeviation( long[] sampleValues, BigDecimal estimate ) {
-        BigDecimal sumOfSquaresOfDifferences = new BigDecimal( 0 );
+    private static Apfloat standardDeviation( long[] sampleValues, Apint estimate ) {
+     // When using BigDecimal the calculation of standardDeviation fails for n > 12
+//      Exception in thread "main" java.lang.StackOverflowError
+//      at java.math.MutableBigInteger.<init>(MutableBigInteger.java:107)
+//      at java.math.MutableBigInteger.divide(MutableBigInteger.java:881)
+//      at java.math.BigDecimal.divideAndRound(BigDecimal.java:1429)
+//      at java.math.BigDecimal.divide(BigDecimal.java:1385)
+//      at java.math.BigDecimal.divide(BigDecimal.java:1500)
+//      at com.franklinharper.DedekindMonteCarlo.sqrtNewtonRaphson(DedekindMonteCarlo.java:322)
+//      at com.franklinharper.DedekindMonteCarlo.sqrtNewtonRaphson(DedekindMonteCarlo.java:330)
+//      at com.franklinharper.DedekindMonteCarlo.sqrtNewtonRaphson(DedekindMonteCarlo.java:330)
+        Apint sumOfSquaresOfDifferences = Apint.ZERO;
         for( int i = 0; i < sampleValues.length; i++ ) {
-            BigDecimal difference = new BigDecimal( sampleValues[ i ] ).subtract( estimate );
+            Apint difference = new Apint( sampleValues[ i ] ).subtract( estimate );
             sumOfSquaresOfDifferences = difference.multiply( difference );
         }
-        BigDecimal variance = sumOfSquaresOfDifferences.divide( new BigDecimal( sampleValues.length - 1 ), MATH_CONTEXT );
-        BigDecimal standardDeviation = bigSqrt( variance );
-        return standardDeviation;
+        Apint variance = sumOfSquaresOfDifferences.divide( new Apint( sampleValues.length - 1 ) );
+        trace( String.format( "variance: " + variance ) );
+        Apfloat sqrt = ApfloatMath.sqrt( variance );
+        trace( String.format( "sqrt: " + sqrt ) );
+        return sqrt;
     }
 
-    private static void printResults( int n, BigDecimal estimate, BigDecimal standardDeviation ) {
-        BigDecimal referenceValue;
+    private static void printColumnHeaders() {
+        System.out.println("n,D(n),KD(n),ED(n),ED(n)/D(n),ED(n)/KD(n), number of iterations,MC sample standard deviation");
+    }
+
+    private static void printResults( int n, Apint estimate, Apfloat standardDeviation, int nIterations, long elapsedMillis ) {
+        System.out.print( n + ",");
         if( n < DEDEKIND_KNOWN_VALUES.length ) {
-            referenceValue = new BigDecimal( DEDEKIND_KNOWN_VALUES[ n ] );
-            System.out.format( "RD(%d): %s (Reference Dedekind number, exact value)\n", n, referenceValue );
+            System.out.print( DEDEKIND_KNOWN_VALUES[ n ] + "," );
         } else {
-//            referenceValue = korshunov( n );
-            referenceValue = new BigDecimal( 0 ); // placeholder value
-            System.out.format( "RD(%d): %s (Reference Dedekind number, Korshunov estimation)\n", n, referenceValue );
+            System.out.print("N/A,");
         }
-        System.out.format( "ED(%d): %s (estimate for D(%d))\n", n, estimate, n );
-        System.out.format(
-            "RD(%d) / ED(%d): %s\n",
-            n,
-            n,
-            referenceValue.divide( estimate, MATH_CONTEXT ) );
-        System.out.format( "sample standard deviation: %s\n", scientificFormat( standardDeviation ) );
-    }
-
-    private static void printElapsedTime( final long startTime ) {
-        long ellapsedMillis = System.currentTimeMillis() - startTime;
-        long ms = ellapsedMillis % 1000;
-        long s = (ellapsedMillis / 1000) % 60;
-        long m = (ellapsedMillis / (1000 * 60)) % 60;
-        long h = (ellapsedMillis / (1000 * 60 * 60)) % 24;
-        System.out.format("Total execution time %dh:%dm:%ds:%dms", h, m, s, ms );
+//        System.out.print( korshunov( n ) + "," );
+        System.out.print("N/A,"); // Waiting for Korshunov...
+        System.out.print( estimate + "," );
+        if( n < DEDEKIND_KNOWN_VALUES.length ) {
+            System.out.print( estimate.divide( DEDEKIND_KNOWN_VALUES[ n ] ) + "," );
+        } else {
+            System.out.print("N/A,");
+        }
+        System.out.print("N/A,"); // Waiting for Korshunov...
+        System.out.print( nIterations + ",");
+        System.out.print( standardDeviation + "," );
+        long ms = elapsedMillis % 1000;
+        long s = (elapsedMillis / 1000) % 60;
+        long m = (elapsedMillis / (1000 * 60)) % 60;
+        long h = (elapsedMillis / (1000 * 60 * 60)) % 24;
+        System.out.format("%dh:%dm:%ds:%dms", h, m, s, ms );
+        System.out.println();
     }
 
     private static long pow2( int integer ) {
@@ -266,22 +289,19 @@ public class DedekindMonteCarlo {
         return result;
     }
 
-//    public static BigDecimal korshunov( int n ) {
-//    BigDecimal x;
-//    if( isOdd( n ) ) {
-////        x = Math.log(2)*(Math.binom(n,n2)+1)
-////        x = x+Math.binom(n,n2+1)*(2^(-n2-1)+n^2*2^(-n-4))
-////        x = x+Math.binom(n,n2+2)*(2^(-n2-2)-n^2*2^(-n-6)-n*2^(-n-3));
-//    } else {
-//        int k = n / 2;
-//        double binomialFactor = Math.pow( 2, binomial( n, k ) );
-//        double exponentialFactor = BigDecimal..exp( a );
-//
-//        x = TWO.multiply( new BigDecimal( binomial(n,n2) ) );
-//        x = x+Math.binom(n,n2+1)*(2^(-n2)+n^2*2^(-n-5)-n*2^(-n-4))
-//    }
-//    return x;
-//    }
+    public static BigDecimal korshunov( int n ) {
+        if( isOdd( n ) ) {
+            // x = Math.log(2)*(Math.binom(n,n2)+1)
+            // x = x+Math.binom(n,n2+1)*(2^(-n2-1)+n^2*2^(-n-4))
+            // x = x+Math.binom(n,n2+2)*(2^(-n2-2)-n^2*2^(-n-6)-n*2^(-n-3));
+            return null;
+        } else {
+            // double a = binomial( n , n / 2 - 1 ) * (Math.pow( 2, -n/2 ) +
+            // n*n*Math.pow( 2, -n-5 )- n * Math.pow( 2, -n-4 ));
+            // return TWO.pow( binomial( n, n/2 ) ).multiply( BigDecimal. );
+            return null;
+        }
+    }
 
     public static int binomial( long total, long choose ) {
         if( total < choose )
