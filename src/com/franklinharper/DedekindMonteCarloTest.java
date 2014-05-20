@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import org.apfloat.Apfloat;
 import org.junit.Test;
 
 public class DedekindMonteCarloTest {
@@ -153,4 +154,59 @@ public class DedekindMonteCarloTest {
         assertEquals( 6435, DedekindMonteCarlo.binomial( 15, 8 ) );
     }
 
+    @Test
+    public void testKorshunov() {
+        // For n even
+        //   a(n) = (n choose (n/2 - 1)) * ( 2^(-n/2) + n^2*2^(-n-5) - n*2^(-n-4) )
+        //   korshunov(n) = 2^(n choose (n / 2)) * exp( a(n) )
+        {
+            // For n = 2
+            //   a(2) = binomial( 2, 0) * (2^-1 + 2^2*2^-7 - 2*2^-6)
+            //   a(2) = 1 * (0.5 + 4*2^-7 - 2*2^-6)
+            //   a(2) = 0.5 + 4*2^-7 - 2*2^-6
+            //   a(2) = 0.5
+            //  korshunov(2) = 2^2 * exp( 0.5 )
+            //  korshunov(2) = 4 * exp( ( 0.5 ) = 6.5948850828
+            Apfloat expected = new Apfloat( "6.5948850828" );
+            Apfloat tolerance = new Apfloat( 0.001 );
+            checkResult( expected, tolerance, DedekindMonteCarlo.korshunov( 2 ) );
+        }
+        {
+            Apfloat tolerance = new Apfloat( 0.001 );
+            // For n = 4
+            //   a(4) = (4 choose (4/2 - 1)) * ( 2^(-4/2) + 4^2*2^(-4-5) - 4*2^(-4-4) )
+            //   a(4) = 1.0625
+            checkResult( new Apfloat( "1.0625" ), tolerance, DedekindMonteCarlo.a(4) );
+
+            //   korshunov(4) = 2^(4 choose (4 / 2)) * exp( 1.0625 )
+            //   korshunov(4) = 185.190140427
+            checkResult( new Apfloat( "185.190140427" ), tolerance, DedekindMonteCarlo.korshunov( 4 ) );
+        }
+        // For n odd
+        //   b(n) = (n choose ((n-3)/2)) * ( 2^( -(n+3)/2 ) - n^2*2^(-n-6) - n*2^(-n+3) )
+        //   c(n) = (n choose ((n-1)/2)) * ( 2^(-(n+1)/2) + n^2*2^(-n-4) )
+        //   korshunov(n) = 2^(binomial(n, (n-1) / 2)) * exp( b(n) + c(n) )
+        {
+            // For n = 3
+            //   b(3) = (3 choose ((3-3)/2)) * ( 2^( -(3+3)/2 ) - 3^2*2^(-3-6) - 3*2^(-3+3) )
+            //   b(3) = -2.892578125
+            //
+            //   c(3) = (3 choose ((3-1)/2)) * ( 2^(-(3+1)/2) + 3^2*2^(-3-4) )
+            //   c(3) = 0.9609375
+            //
+            //  korshunov(3) = 2^( 3 choose 1 ) * exp( b(3) + c(3) )
+            //  korshunov(3) = 2^( 3 choose 1 ) * exp( -2.892578125 + 0.9609375 )
+            //  korshunov(3) = 1.15928207966
+            Apfloat expected = new Apfloat( "1.15928207966" );
+            Apfloat tolerance = new Apfloat( 0.001 );
+            checkResult( expected, tolerance, DedekindMonteCarlo.korshunov( 3 ) );
+        }
+    }
+
+    private void checkResult( Apfloat expected, Apfloat tolerance, Apfloat actual ) {
+        Apfloat lowestExpected = expected.subtract( tolerance );
+        assertTrue( "Expected > " + lowestExpected + " Actual: " + actual, +1 == actual.compareTo( lowestExpected ) );
+        Apfloat highestExpected = expected.add( tolerance );
+        assertTrue( "Expected < " + highestExpected + " Actual: " + actual, -1 == actual.compareTo( highestExpected ) );
+    }
 }

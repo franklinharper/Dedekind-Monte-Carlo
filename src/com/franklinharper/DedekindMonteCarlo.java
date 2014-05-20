@@ -15,10 +15,8 @@ import org.apfloat.ApintMath;
 public class DedekindMonteCarlo {
 
     // TODO
-    // add korshunov's formula to the results
-    // format output for including in a table
-    // send bill 3.5 days ( tues., wed, 1/2 thur., Fri May 16)
-    // fix: calulation of std. dev. for large numbers
+    // send bill 4.5 days ( tues., wed, 1/2 thur., Fri May 16, Mon. 19)
+    // fix: calculation of std. dev. for large numbers
 
     private static final boolean TRACE = false;
 
@@ -39,7 +37,7 @@ public class DedekindMonteCarlo {
         if( !TRACE ) {
             printColumnHeaders();
         }
-        DedekindMonteCarlo.dedekindEstimation( 5, 10000000 );
+        DedekindMonteCarlo.dedekindEstimation( 4, 100000 );
     }
 
 
@@ -124,21 +122,24 @@ public class DedekindMonteCarlo {
     }
 
     private static void printResults( int n, Apint estimate, Apfloat standardDeviation, int nIterations, long elapsedMillis ) {
+        String format = "%.10s,";
         System.out.print( n + ",");
         if( n < DEDEKIND_KNOWN_VALUES.length ) {
             System.out.print( DEDEKIND_KNOWN_VALUES[ n ] + "," );
         } else {
             System.out.print("N/A,");
         }
-//        System.out.print( korshunov( n ) + "," );
-        System.out.print("N/A,"); // Waiting for Korshunov...
+        Apfloat kdn = korshunov( n );
+        System.out.format( format, kdn );
         System.out.print( estimate + "," );
+        Apfloat floatEstimate = new Apfloat( estimate.toString() );
         if( n < DEDEKIND_KNOWN_VALUES.length ) {
-            System.out.print( estimate.divide( DEDEKIND_KNOWN_VALUES[ n ] ) + "," );
+            Apfloat ratio = floatEstimate.divide( DEDEKIND_KNOWN_VALUES[ n ] );
+            System.out.print( ratio.toString( true ) + "," );
         } else {
             System.out.print("N/A,");
         }
-        System.out.print("N/A,"); // Waiting for Korshunov...
+        System.out.print(floatEstimate.divide( kdn ) + "," );
         System.out.print( nIterations + ",");
         System.out.print( standardDeviation + "," );
         long ms = elapsedMillis % 1000;
@@ -289,18 +290,61 @@ public class DedekindMonteCarlo {
         return result;
     }
 
-    public static BigDecimal korshunov( int n ) {
+    public static Apfloat korshunov( int n ) {
         if( isOdd( n ) ) {
-            // x = Math.log(2)*(Math.binom(n,n2)+1)
-            // x = x+Math.binom(n,n2+1)*(2^(-n2-1)+n^2*2^(-n-4))
-            // x = x+Math.binom(n,n2+2)*(2^(-n2-2)-n^2*2^(-n-6)-n*2^(-n-3));
-            return null;
+            Apint f = ApintMath.pow( TWO, binomial( n, (n - 1)/2 ) );
+            Apfloat bn = b(n);
+            Apfloat cn = c(n);
+            Apfloat expbncn = ApfloatMath.exp( bn.add( cn ) );
+            Apfloat kdn = f.multiply( expbncn );
+            return kdn;
         } else {
-            // double a = binomial( n , n / 2 - 1 ) * (Math.pow( 2, -n/2 ) +
-            // n*n*Math.pow( 2, -n-5 )- n * Math.pow( 2, -n-4 ));
-            // return TWO.pow( binomial( n, n/2 ) ).multiply( BigDecimal. );
-            return null;
+            Apint f = ApintMath.pow( TWO, binomial( n, n/2 ) );
+            trace( "f:" + f );
+            trace( "f.precision():" + f.precision() );
+            Apfloat a = a( n );
+            trace( "a(n): " + a );
+            trace( "a(n).precision(): " + a.precision() );
+            Apfloat expa = ApfloatMath.exp( a );
+            trace( "exp(a):" + expa );
+            trace( "exp(a).precision(): " + expa.precision() );
+            Apfloat kdn = f.multiply( expa );
+            trace( "kdn(n): " + kdn );
+            trace( "kdn.precision(): " + kdn.precision() );
+            return kdn;
         }
+    }
+
+    static Apfloat a( int intN ) {
+        Apint n = new Apint( intN );
+        Apfloat two = new Apfloat( 2, 100 );
+        Apint factor1 = new Apint( binomial( intN, intN/2 - 1 ) );
+        Apfloat sumand1 = ApfloatMath.pow( two, -intN / 2 );
+        Apfloat sumand2 = n.multiply( n ).multiply( ApfloatMath.pow( two, -intN - 5 ) );
+        Apfloat sumand3 = n.multiply( ApfloatMath.pow( two, -intN -4 ) );
+        Apfloat result = factor1.multiply( sumand1.add( sumand2 ).subtract( sumand3 ) );
+        return result;
+    }
+
+    private static Apfloat b( int intN ) {
+        Apint n = new Apint( intN );
+        Apfloat two = new Apfloat( 2, 100 );
+        Apint factor1 = new Apint( binomial( intN, ( intN - 3 ) / 2 ) );
+        Apfloat sumand1 = ApfloatMath.pow( two, -( intN + 3 ) / 2 );
+        Apfloat sumand2 = n.multiply( n ).multiply( ApfloatMath.pow( two, -intN - 6 ) );
+        Apfloat sumand3 = n.multiply( ApfloatMath.pow( two, -intN + 3 ) );
+        Apfloat result = factor1.multiply( sumand1.subtract( sumand2 ).subtract( sumand3 ) );
+        return result;
+    }
+
+    private static Apfloat c( int intN ) {
+        Apint n = new Apint( intN );
+        Apfloat two = new Apfloat( 2, 100 );
+        Apint factor1 = new Apint( binomial( intN, ( intN - 1 ) / 2 ) );
+        Apfloat sumand1 = ApfloatMath.pow( two, -( intN + 1 ) / 2 );
+        Apfloat sumand2 = n.multiply( n ).multiply( ApfloatMath.pow( two, -intN - 4 ) );
+        Apfloat result = factor1.multiply( sumand1.add( sumand2 ) );
+        return result;
     }
 
     public static int binomial( long total, long choose ) {
