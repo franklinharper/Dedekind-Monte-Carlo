@@ -1,8 +1,5 @@
 package com.franklinharper;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
@@ -16,20 +13,19 @@ public class DedekindMonteCarlo {
 
     // TODO
     // send bill 4.5 days ( tues., wed, 1/2 thur., Fri May 16, Mon. 19)
-    // fix: calculation of std. dev. for large numbers
 
     private static final boolean TRACE = false;
 
-    private static final Apint[] DEDEKIND_KNOWN_VALUES = {
-        new Apint( "2" ),
-        new Apint( "3" ),
-        new Apint( "6" ),
-        new Apint( "20" ),
-        new Apint( "168" ),
-        new Apint( "7581" ),
-        new Apint( "7828354" ),
-        new Apint( "2414682040998" ),
-        new Apint( "56130437228687557907788" ), };
+    private static final Apfloat[] DEDEKIND_KNOWN_VALUES = {
+        new Apfloat( "2" ),
+        new Apfloat( "3" ),
+        new Apfloat( "6" ),
+        new Apfloat( "20" ),
+        new Apfloat( "168" ),
+        new Apfloat( "7581" ),
+        new Apfloat( "7828354" ),
+        new Apfloat( "2414682040998" ),
+        new Apfloat( "56130437228687557907788" ), };
 
     public static final Apint TWO = new Apint( 2 );
 
@@ -37,7 +33,9 @@ public class DedekindMonteCarlo {
         if( !TRACE ) {
             printColumnHeaders();
         }
-        DedekindMonteCarlo.dedekindEstimation( 4, 100000 );
+        for( int n = 2; n < 17; n++ ) {
+            DedekindMonteCarlo.dedekindEstimation( n, 1000000 );
+        }
     }
 
 
@@ -84,33 +82,25 @@ public class DedekindMonteCarlo {
         }
         Apint multiplier = ApintMath.pow( TWO, binomial( n, k ) );
         trace( "multiplier: " + multiplier );
-        Apint estimate = sumSampleValues.multiply( multiplier ).divide( new Apint( sampleValues.length ) );
+        Apfloat estimate = sumSampleValues.multiply( multiplier ).divide( new Apfloat( sampleValues.length ) );
 
-//        Apfloat standardDeviation = standardDeviation( sampleValues, estimate );
-      Apfloat standardDeviation = Apfloat.ZERO;
-
+        Apfloat standardDeviation = standardDeviation( sampleValues, estimate );
 
         long elapsedMillis = System.currentTimeMillis() - startTime;
         printResults( n, estimate, standardDeviation, nIterations, elapsedMillis );
     }
 
-    private static Apfloat standardDeviation( long[] sampleValues, Apint estimate ) {
-     // When using BigDecimal the calculation of standardDeviation fails for n > 12
-//      Exception in thread "main" java.lang.StackOverflowError
-//      at java.math.MutableBigInteger.<init>(MutableBigInteger.java:107)
-//      at java.math.MutableBigInteger.divide(MutableBigInteger.java:881)
-//      at java.math.BigDecimal.divideAndRound(BigDecimal.java:1429)
-//      at java.math.BigDecimal.divide(BigDecimal.java:1385)
-//      at java.math.BigDecimal.divide(BigDecimal.java:1500)
-//      at com.franklinharper.DedekindMonteCarlo.sqrtNewtonRaphson(DedekindMonteCarlo.java:322)
-//      at com.franklinharper.DedekindMonteCarlo.sqrtNewtonRaphson(DedekindMonteCarlo.java:330)
-//      at com.franklinharper.DedekindMonteCarlo.sqrtNewtonRaphson(DedekindMonteCarlo.java:330)
-        Apint sumOfSquaresOfDifferences = Apint.ZERO;
+    private static Apfloat standardDeviation( long[] sampleValues, Apfloat estimate ) {
+        // In a previous version which used BigDecimal, the calculation of the
+        // square root would fail for n > 12, because The recursive sqrt
+        // function would cause a StackOverflowError.
+        Apfloat sumOfSquaresOfDifferences = Apfloat.ZERO;
         for( int i = 0; i < sampleValues.length; i++ ) {
-            Apint difference = new Apint( sampleValues[ i ] ).subtract( estimate );
+            Apfloat difference = new Apfloat( sampleValues[ i ] ).subtract( estimate );
             sumOfSquaresOfDifferences = difference.multiply( difference );
         }
-        Apint variance = sumOfSquaresOfDifferences.divide( new Apint( sampleValues.length - 1 ) );
+        Apfloat floatSumOfSquaresOfDifferences = new Apfloat( sumOfSquaresOfDifferences.toString(), 100 );
+        Apfloat variance = floatSumOfSquaresOfDifferences.divide( new Apint( sampleValues.length - 1 ) );
         trace( String.format( "variance: " + variance ) );
         Apfloat sqrt = ApfloatMath.sqrt( variance );
         trace( String.format( "sqrt: " + sqrt ) );
@@ -118,20 +108,20 @@ public class DedekindMonteCarlo {
     }
 
     private static void printColumnHeaders() {
-        System.out.println("n,D(n),KD(n),ED(n),ED(n)/D(n),ED(n)/KD(n), number of iterations,MC sample standard deviation");
+        System.out.println("n,D(n),KD(n),ED(n),ED(n)/D(n),ED(n)/KD(n), number of iterations,sample standard deviation, calculation time");
     }
 
-    private static void printResults( int n, Apint estimate, Apfloat standardDeviation, int nIterations, long elapsedMillis ) {
+    private static void printResults( int n, Apfloat estimate, Apfloat standardDeviation, int nIterations, long elapsedMillis ) {
         String format = "%.10s,";
         System.out.print( n + ",");
         if( n < DEDEKIND_KNOWN_VALUES.length ) {
-            System.out.print( DEDEKIND_KNOWN_VALUES[ n ] + "," );
+            System.out.format( format, DEDEKIND_KNOWN_VALUES[ n ] );
         } else {
             System.out.print("N/A,");
         }
         Apfloat kdn = korshunov( n );
         System.out.format( format, kdn );
-        System.out.print( estimate + "," );
+        System.out.format( format, new Apfloat( estimate.toString() ) );
         Apfloat floatEstimate = new Apfloat( estimate.toString() );
         if( n < DEDEKIND_KNOWN_VALUES.length ) {
             Apfloat ratio = floatEstimate.divide( DEDEKIND_KNOWN_VALUES[ n ] );
@@ -139,9 +129,9 @@ public class DedekindMonteCarlo {
         } else {
             System.out.print("N/A,");
         }
-        System.out.print(floatEstimate.divide( kdn ) + "," );
-        System.out.print( nIterations + ",");
-        System.out.print( standardDeviation + "," );
+        System.out.format( format, floatEstimate.divide( kdn ) );
+        System.out.format( format, new Apfloat( nIterations ));
+        System.out.format( format, standardDeviation );
         long ms = elapsedMillis % 1000;
         long s = (elapsedMillis / 1000) % 60;
         long m = (elapsedMillis / (1000 * 60)) % 60;
@@ -354,54 +344,4 @@ public class DedekindMonteCarlo {
             return 1;
         return binomial( total - 1, choose - 1 ) + binomial( total - 1, choose );
     }
-
-//    public static class DedekindResult {
-//        double estimate;
-//        double variance;
-//
-//        public DedekindResult( double estimate, double variance ) {
-//            this.estimate = estimate;
-//            this.stdDeviation = variance;
-//        }
-//    }
-
-    private static final BigDecimal SQRT_DIG = new BigDecimal(150);
-    private static final BigDecimal SQRT_PRE = new BigDecimal(10).pow(SQRT_DIG.intValue());
-
-    /**
-     * Private utility method used to compute the square root of a BigDecimal.
-     *
-     * @author Luciano Culacciatti
-     * @url http://www.codeproject.com/Tips/257031/Implementing-SqrtRoot-in-BigDecimal
-     */
-    private static BigDecimal sqrtNewtonRaphson  (BigDecimal c, BigDecimal xn, BigDecimal precision){
-        BigDecimal fx = xn.pow(2).add(c.negate());
-        BigDecimal fpx = xn.multiply(new BigDecimal(2));
-        BigDecimal xn1 = fx.divide(fpx,2*SQRT_DIG.intValue(),RoundingMode.HALF_DOWN);
-        xn1 = xn.add(xn1.negate());
-        BigDecimal currentSquare = xn1.pow(2);
-        BigDecimal currentPrecision = currentSquare.subtract(c);
-        currentPrecision = currentPrecision.abs();
-        if (currentPrecision.compareTo(precision) <= -1){
-            return xn1;
-        }
-        return sqrtNewtonRaphson(c, xn1, precision);
-    }
-
-    /**
-     * Uses Newton Raphson to compute the square root of a BigDecimal.
-     *
-     * @author Luciano Culacciatti
-     * @url http://www.codeproject.com/Tips/257031/Implementing-SqrtRoot-in-BigDecimal
-     */
-    public static BigDecimal bigSqrt(BigDecimal c){
-        return sqrtNewtonRaphson(c,new BigDecimal(1), new BigDecimal( 10 ));
-    }
-
-
-    private static final DecimalFormat BD_SCIENTIFIC_FORMAT = new DecimalFormat("#.######E0");
-    public static String scientificFormat( BigDecimal bd ) {
-        return BD_SCIENTIFIC_FORMAT.format(bd);
-    }
-
 }
