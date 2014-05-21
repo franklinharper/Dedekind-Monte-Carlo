@@ -116,32 +116,32 @@ public class DedekindMonteCarlo {
     }
 
     private static void printColumnHeaders() {
-        System.out.println("n,D(n),KD(n),ED(n),ED(n)/D(n),ED(n)/KD(n), number of iterations,sample standard deviation, calculation time");
+        System.out.println("n\tD(n)\tKD(n)\tED(n)\tED(n)/D(n)\tED(n)/KD(n)\tnumber of iterations\tsample standard deviation\tcalculation time\tSW Version");
     }
 
     private static void printResults( int n, Apfloat estimate, Apfloat standardDeviation, int nIterations, long startMillis ) {
-        String format = "%.10s,";
-        System.out.print( n + ",");
+        String format = "%.10s";
+        printTsv( n );
         if( n < DEDEKIND_KNOWN_VALUES.length ) {
-            System.out.format( format, DEDEKIND_KNOWN_VALUES[ n ] );
+            printTsv( String.format( format, DEDEKIND_KNOWN_VALUES[ n ] ) );
         } else {
-            System.out.print("N/A,");
+            printTsv( "N/A," );
         }
         Apfloat kdn = korshunov( n );
-        System.out.format( format, kdn );
-        System.out.format( format, new Apfloat( estimate.toString() ) );
+        printTsv( String.format( format, kdn ) );
+        printTsv( String.format( format, new Apfloat( estimate.toString() ) ) );
         Apfloat floatEstimate = new Apfloat( estimate.toString() );
         if( n < DEDEKIND_KNOWN_VALUES.length ) {
             Apfloat ratio = floatEstimate.divide( DEDEKIND_KNOWN_VALUES[ n ] );
-            System.out.print( ratio.toString( true ) + "," );
+            printTsv( ratio.toString( true ) );
         } else {
-            System.out.print("N/A,");
+            printTsv("N/A,");
         }
-        System.out.format( format, floatEstimate.divide( kdn ) );
-        System.out.format( format, new Apfloat( nIterations ));
-        System.out.format( format, standardDeviation );
-        System.out.format( format, standardDeviation );
-        System.out.print( elapsedTime( startMillis ) + ",");
+        printTsv( String.format( format, floatEstimate.divide( kdn ) ) );
+        printTsv( String.format( format, new Apfloat( nIterations ) ) );
+        printTsv( String.format( format, standardDeviation ) );
+        printTsv( elapsedTime( startMillis ) );
+        printTsv( version );
         System.out.println();
     }
 
@@ -363,5 +363,13 @@ public class DedekindMonteCarlo {
         if( choose == 0 || choose == total )
             return 1;
         return binomial( total - 1, choose - 1 ) + binomial( total - 1, choose );
+    }
+
+    public static void printTsv( Object s ) {
+        System.out.print( s + "\t" );
+    }
+
+    public static void printTsv( int integer ) {
+        System.out.print( integer + "\t" );
     }
 }
