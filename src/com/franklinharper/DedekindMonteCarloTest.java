@@ -155,58 +155,134 @@ public class DedekindMonteCarloTest {
     }
 
     @Test
-    public void testKorshunov() {
-        // For n even
+    public void test_an() {
         //   a(n) = (n choose (n/2 - 1)) * ( 2^(-n/2) + n^2*2^(-n-5) - n*2^(-n-4) )
-        //   korshunov(n) = 2^(n choose (n / 2)) * exp( a(n) )
-        {
+        Apfloat expectedResults[] = {
+            null,
+            null,
             // For n = 2
-            //   a(2) = binomial( 2, 0) * (2^-1 + 2^2*2^-7 - 2*2^-6)
+            //   a(2) = ( 2 choose 0) * (2^-1 + 2^2*2^-7 - 2*2^-6)
             //   a(2) = 1 * (0.5 + 4*2^-7 - 2*2^-6)
             //   a(2) = 0.5 + 4*2^-7 - 2*2^-6
             //   a(2) = 0.5
-            //  korshunov(2) = 2^2 * exp( 0.5 )
-            //  korshunov(2) = 4 * exp( ( 0.5 ) = 6.5948850828
-            Apfloat expected = new Apfloat( "6.5948850828" );
-            Apfloat tolerance = new Apfloat( 0.001 );
-            checkResult( expected, tolerance, DedekindMonteCarlo.korshunov( 2 ) );
-        }
-        {
-            Apfloat tolerance = new Apfloat( 0.001 );
+            new Apfloat( "0.5" ),
+            null,
             // For n = 4
             //   a(4) = (4 choose (4/2 - 1)) * ( 2^(-4/2) + 4^2*2^(-4-5) - 4*2^(-4-4) )
             //   a(4) = 1.0625
-            checkResult( new Apfloat( "1.0625" ), tolerance, DedekindMonteCarlo.a(4) );
+            new Apfloat( "1.0625" ),
+        };
+        Apfloat tolerance = new Apfloat( "10e-9" );
+        for( int n = 0; n < expectedResults.length; n++ ) {
+            Apfloat expected = expectedResults[ n ];
+            if( expected != null ) {
+                checkResult( expected, tolerance, DedekindMonteCarlo.a( n ) );
+            }
+        }
+    }
+
+    @Test
+    public void test_bn() {
+        // b(n) = (n choose ((n-3)/2)) * ( 2^( -(n+3)/2 ) + n^2*2^(-n-6) - n*2^(-n-3) )
+        Apfloat expectedResults[] = {
+            null,
+            null,
+            null,
+            // b(3) = (3 choose ((3-3)/2)) * ( 2^( -(3+3)/2 ) + 3^2*2^(-3-6) - 3*2^(-3-3) )
+            // b(3) = (3 choose ((3-3)/2)) * ( 2^( -(3+3)/2 ) + 3^2*2^(-3-6) - 3*2^(-3-3) )
+            // b(3) = (3 choose ((3-3)/2)) * ( 2^( -(3+3)/2 ) + 3^2*2^(-3-6) - 3*2^(-3-3) )
+            // b(3) = 0.095703125
+//            new Apfloat( "0.095703125" ),
+            null,
+            null,
+            // For n = 5
+            // b(5) = (5 choose ((5-3)/2)) * ( 2^( -(5+3)/2 ) + 5^2*2^(-5-6) - 5*2^(-5-3) )
+            // b(5) = 0.27587890625
+            new Apfloat( "0.27587890625" ),
+        };
+        Apfloat tolerance = new Apfloat( "10e-9" );
+        for( int n = 0; n < expectedResults.length; n++ ) {
+            Apfloat expected = expectedResults[ n ];
+            if( expected != null ) {
+                checkResult( expected, tolerance, DedekindMonteCarlo.b( n ) );
+            }
+        }
+    }
+
+    @Test
+    public void test_cn() {
+        // c(n) = (n choose ((n-1)/2)) * ( 2^(-(n+1)/2) + n^2*2^(-n-4) )
+        Apfloat expectedResults[] = {
+            null,
+            null,
+            null,
+            // c(3) = (3 choose ((3-1)/2)) * ( 2^(-(3+1)/2) + 3^2*2^(-3-4) )
+            // c(3) = 0.9609375
+            new Apfloat( "0.9609375" ),
+            null,
+            // For n = 5
+            // c(5) = (5 choose ((5-1)/2)) * ( 2^(-(5+1)/2) + 5^2*2^(-5-4) )
+            // c(5) = 1.73828125
+            new Apfloat( "1.73828125" ),
+        };
+        Apfloat tolerance = new Apfloat( "10e-9" );
+        for( int n = 0; n < expectedResults.length; n++ ) {
+            Apfloat expected = expectedResults[ n ];
+            if( expected != null ) {
+                checkResult( expected, tolerance, DedekindMonteCarlo.c( n ) );
+            }
+        }
+    }
+
+    @Test
+    public void testKorshunov() {
+        // Definition of k(n)
+        //
+        // For n even
+        //   korshunov(n) = 2^(n choose (n / 2)) * exp( a(n) )
+        //
+        // For n odd
+        //   korshunov(n) = 2^( (n choose ((n-1)/2)) + 1) * exp( b(n) + c(n) )
+
+        Apfloat expectedResults[] = {
+            null,
+            null,
+
+            //  korshunov(2) = 2^2 * exp( a(2) )
+            //  korshunov(2) = 4 * exp( 0.5 ) = 6.5948850828
+            new Apfloat( "6.5948850828" ),
+
+            // korshunov(3) = 2^( (3 choose ((3-1)/2)) + 1) * exp( 0.095703125 + 0.9609375 )
+            // korshunov(3) = 46.02705368692
+            new Apfloat( "46.0270536869" ),
 
             //   korshunov(4) = 2^(4 choose (4 / 2)) * exp( 1.0625 )
             //   korshunov(4) = 185.190140427
-            checkResult( new Apfloat( "185.190140427" ), tolerance, DedekindMonteCarlo.korshunov( 4 ) );
+            new Apfloat( "185.190140427" ),
+
+            // korshunov(5) = 2^( (5 choose ((5-1)/2)) + 1) * exp( b(5) + c(5) )
+            // korshunov(5) = 2^( (5 choose ((5-1)/2)) + 1) * exp( 0.27587890625 + 1.73828125 )
+            // korshunov(5) = 15348.5938416
+            new Apfloat( "15348.5938416" ),
+        };
+        for( int n = 0; n < expectedResults.length; n++ ) {
+            Apfloat expected = expectedResults[ n ];
+            if( expected != null ) {
+                Apfloat tolerance = expected.multiply( new Apfloat( "0.00001" ) );
+                checkResult( expected, tolerance, DedekindMonteCarlo.korshunov( n ) );
+            }
         }
-        // For n odd
-        //   b(n) = (n choose ((n-3)/2)) * ( 2^( -(n+3)/2 ) - n^2*2^(-n-6) - n*2^(-n+3) )
-        //   c(n) = (n choose ((n-1)/2)) * ( 2^(-(n+1)/2) + n^2*2^(-n-4) )
-        //   korshunov(n) = 2^(binomial(n, (n-1) / 2)) * exp( b(n) + c(n) )
-        {
-            // For n = 3
-            //   b(3) = (3 choose ((3-3)/2)) * ( 2^( -(3+3)/2 ) - 3^2*2^(-3-6) - 3*2^(-3+3) )
-            //   b(3) = -2.892578125
-            //
-            //   c(3) = (3 choose ((3-1)/2)) * ( 2^(-(3+1)/2) + 3^2*2^(-3-4) )
-            //   c(3) = 0.9609375
-            //
-            //  korshunov(3) = 2^( 3 choose 1 ) * exp( b(3) + c(3) )
-            //  korshunov(3) = 2^( 3 choose 1 ) * exp( -2.892578125 + 0.9609375 )
-            //  korshunov(3) = 1.15928207966
-            Apfloat expected = new Apfloat( "1.15928207966" );
-            Apfloat tolerance = new Apfloat( 0.001 );
-            checkResult( expected, tolerance, DedekindMonteCarlo.korshunov( 3 ) );
-        }
+//        {
+//            checkResult( expected, tolerance, DedekindMonteCarlo.korshunov( 3 ) );
+//        }
     }
 
     private void checkResult( Apfloat expected, Apfloat tolerance, Apfloat actual ) {
         Apfloat lowestExpected = expected.subtract( tolerance );
-        assertTrue( "Expected > " + lowestExpected + " Actual: " + actual, +1 == actual.compareTo( lowestExpected ) );
+        int compareLowestExpected = actual.compareTo( lowestExpected );
+        assertTrue( "Expected > " + lowestExpected + " Actual: " + actual, compareLowestExpected == 1 || compareLowestExpected == 0  );
         Apfloat highestExpected = expected.add( tolerance );
-        assertTrue( "Expected < " + highestExpected + " Actual: " + actual, -1 == actual.compareTo( highestExpected ) );
+        int compareHighestExpected = actual.compareTo( highestExpected );
+        assertTrue( "Expected < " + highestExpected + " Actual: " + actual, compareHighestExpected == -1 || compareHighestExpected == 0 );
     }
 }

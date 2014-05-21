@@ -299,7 +299,8 @@ public class DedekindMonteCarlo {
         final long start = System.currentTimeMillis();
         Apfloat kdn;
         if( isOdd( n ) ) {
-            Apint f = ApintMath.pow( TWO, binomial( n, (n - 1)/2 ) );
+            // korshunov(n) = 2^( (n choose ((n-1)/2)) + 1) * exp( b(n) + c(n) )
+            Apint f = ApintMath.pow( TWO, binomial( n, (n - 1)/2 ) + 1 );
             trace( "f:" + f );
             Apfloat bn = b(n);
             trace( "b(n): " + bn );
@@ -336,18 +337,18 @@ public class DedekindMonteCarlo {
         return result;
     }
 
-    private static Apfloat b( int intN ) {
+    static Apfloat b( int intN ) {
         Apint n = new Apint( intN );
         Apfloat two = new Apfloat( 2, 100 );
         Apint factor1 = new Apint( binomial( intN, ( intN - 3 ) / 2 ) );
         Apfloat sumand1 = ApfloatMath.pow( two, -( intN + 3 ) / 2 );
         Apfloat sumand2 = n.multiply( n ).multiply( ApfloatMath.pow( two, -intN - 6 ) );
-        Apfloat sumand3 = n.multiply( ApfloatMath.pow( two, -intN + 3 ) );
-        Apfloat result = factor1.multiply( sumand1.subtract( sumand2 ).subtract( sumand3 ) );
+        Apfloat sumand3 = n.multiply( ApfloatMath.pow( two, -intN - 3 ) );
+        Apfloat result = factor1.multiply( sumand1.add( sumand2 ).subtract( sumand3 ) );
         return result;
     }
 
-    private static Apfloat c( int intN ) {
+    static Apfloat c( int intN ) {
         Apint n = new Apint( intN );
         Apfloat two = new Apfloat( 2, 100 );
         Apint factor1 = new Apint( binomial( intN, ( intN - 1 ) / 2 ) );
