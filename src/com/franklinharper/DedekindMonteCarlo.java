@@ -12,11 +12,10 @@ import org.apfloat.ApintMath;
 public class DedekindMonteCarlo {
 
     // TODO
-    // Add version number to output
     // send bill 5 days ( tues., wed, 1/2 thur., Fri May 16, Mon. 19, Tues. 20)
 
     private static final boolean TRACE = false;
-    private static final String version = "0.8";
+    private static final String version = "0.9";
 
     private static final Apfloat[] DEDEKIND_KNOWN_VALUES = {
         new Apfloat( "2" ),
