@@ -134,26 +134,28 @@ public class DedekindMonteCarlo {
     }
 
     private static void printResults( int n, Apfloat estimate, Apfloat standardDeviation, int nIterations, long startMillis ) {
-        String format = "%.10s";
+        String outputFormat = "%.10s";
         printTsv( n );
         if( n < DEDEKIND_KNOWN_VALUES.length ) {
-            printTsv( String.format( format, DEDEKIND_KNOWN_VALUES[ n ] ) );
+            printTsv( String.format( outputFormat, DEDEKIND_KNOWN_VALUES[ n ] ) );
         } else {
             printTsv( "N/A," );
         }
         Apfloat kdn = korshunov( n );
-        printTsv( String.format( format, kdn ) );
-        printTsv( String.format( format, new Apfloat( estimate.toString() ) ) );
-        Apfloat floatEstimate = new Apfloat( estimate.toString() );
+        printTsv( String.format( outputFormat, kdn ) );
+        printTsv( String.format( outputFormat, estimate ) );
         if( n < DEDEKIND_KNOWN_VALUES.length ) {
-            Apfloat ratio = floatEstimate.divide( DEDEKIND_KNOWN_VALUES[ n ] );
-            printTsv( ratio.toString( true ) );
+            trace( "estimate.precision: " + estimate.precision() );
+            Apfloat dn = DEDEKIND_KNOWN_VALUES[ n ];
+            trace( "dn.precision: " + dn.precision() );
+            Apfloat ratio = estimate.divide( DEDEKIND_KNOWN_VALUES[ n ] );
+            printTsv( String.format( outputFormat, ratio ) );
         } else {
             printTsv("N/A,");
         }
-        printTsv( String.format( format, floatEstimate.divide( kdn ) ) );
-        printTsv( String.format( format, new Apfloat( nIterations ) ) );
-        printTsv( String.format( format, standardDeviation ) );
+        printTsv( String.format( outputFormat, estimate.divide( kdn ) ) );
+        printTsv( String.format( outputFormat, new Apfloat( nIterations ) ) );
+        printTsv( String.format( outputFormat, standardDeviation ) );
         printTsv( elapsedTime( startMillis ) );
         printTsv( version );
         System.out.println();
