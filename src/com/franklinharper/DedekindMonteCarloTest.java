@@ -6,6 +6,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.apfloat.Apfloat;
+import org.apfloat.Apint;
 import org.junit.Test;
 
 public class DedekindMonteCarloTest {
@@ -155,6 +156,23 @@ public class DedekindMonteCarloTest {
     }
 
     @Test
+    public void testStandardDeviation() {
+        {
+            long[] samples = new long[] { 1, 2 };
+            Apint multiplier = new Apint( 512 );
+            Apfloat estimate = new Apfloat( 512 );
+            Apfloat expected = new Apfloat( 512 );
+            Apfloat tolerance = expected.multiply( new Apfloat( 0.0001 ) );
+            checkResult( expected, tolerance, DedekindMonteCarlo.standardDeviation( samples, multiplier , estimate ) );
+        }
+        {
+            Apfloat expected = new Apfloat( 1000 );
+            Apfloat tolerance = expected.multiply( new Apfloat( 0.0001 ) );
+            checkResult( expected, tolerance, DedekindMonteCarlo.standardDeviation( new long[] { 30, 31, 29}, new Apint( 1000 ), new Apfloat( 30000 ) ) );
+        }
+    }
+
+    @Test
     public void test_an() {
         //   a(n) = (n choose (n/2 - 1)) * ( 2^(-n/2) + n^2*2^(-n-5) - n*2^(-n-4) )
         Apfloat expectedResults[] = {
@@ -272,9 +290,6 @@ public class DedekindMonteCarloTest {
                 checkResult( expected, tolerance, DedekindMonteCarlo.korshunov( n ) );
             }
         }
-//        {
-//            checkResult( expected, tolerance, DedekindMonteCarlo.korshunov( 3 ) );
-//        }
     }
 
     private void checkResult( Apfloat expected, Apfloat tolerance, Apfloat actual ) {

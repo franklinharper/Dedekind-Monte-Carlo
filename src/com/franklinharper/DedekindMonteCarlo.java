@@ -35,10 +35,10 @@ public class DedekindMonteCarlo {
         if( !TRACE ) {
             printColumnHeaders();
         }
-//        for( int n = 2; n < 17; n++ ) {
-//            DedekindMonteCarlo.dedekindEstimation( n, 1000000 );
-//        }
-      DedekindMonteCarlo.dedekindEstimation( 14, 100000 );
+        for( int n = 10; n <= 13; n++ ) {
+            DedekindMonteCarlo.dedekindEstimation( n, 1000000 );
+        }
+//      DedekindMonteCarlo.dedekindEstimation( 14, 100000 );
     }
 
 
@@ -98,14 +98,14 @@ public class DedekindMonteCarlo {
         printResults( n, estimate, standardDeviation, nIterations, startMillis );
     }
 
-    private static Apfloat standardDeviation( long[] sampleValues, Apint multiplier, Apfloat estimate ) {
+    static Apfloat standardDeviation( long[] sampleValues, Apint multiplier, Apfloat estimate ) {
         // In a previous version which used BigDecimal, the calculation of the
         // square root would fail for n > 12, because The recursive sqrt
         // function would cause a StackOverflowError.
         Apfloat sumOfSquaresOfDifferences = Apfloat.ZERO;
         for( int i = 0; i < sampleValues.length; i++ ) {
             Apfloat difference = new Apfloat( sampleValues[ i ] ).multiply( multiplier ).subtract( estimate );
-            sumOfSquaresOfDifferences = difference.multiply( difference );
+            sumOfSquaresOfDifferences = sumOfSquaresOfDifferences.add( difference.multiply( difference ) );
         }
         Apfloat floatSumOfSquaresOfDifferences = new Apfloat( sumOfSquaresOfDifferences.toString(), 100 );
         Apfloat variance = floatSumOfSquaresOfDifferences.divide( new Apint( sampleValues.length - 1 ) );
