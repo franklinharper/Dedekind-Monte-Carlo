@@ -16,6 +16,7 @@ public class DedekindMonteCarlo {
     // send bill 5 days ( tues., wed, 1/2 thur., Fri May 16, Mon. 19, Tues. 20)
 
     private static final boolean TRACE = false;
+    private static final String version = "0.8";
 
     private static final Apfloat[] DEDEKIND_KNOWN_VALUES = {
         new Apfloat( "2" ),
@@ -91,19 +92,19 @@ public class DedekindMonteCarlo {
         Apfloat estimate = sumSampleValues.multiply( multiplier ).divide( new Apfloat( sampleValues.length ) );
 
         final long startStandardDeviation = System.currentTimeMillis();
-        Apfloat standardDeviation = standardDeviation( sampleValues, estimate );
+        Apfloat standardDeviation = standardDeviation( sampleValues, multiplier, estimate );
         trace( "time to calculate standardDeviation: " + elapsedTime( startStandardDeviation ) );
 
         printResults( n, estimate, standardDeviation, nIterations, startMillis );
     }
 
-    private static Apfloat standardDeviation( long[] sampleValues, Apfloat estimate ) {
+    private static Apfloat standardDeviation( long[] sampleValues, Apint multiplier, Apfloat estimate ) {
         // In a previous version which used BigDecimal, the calculation of the
         // square root would fail for n > 12, because The recursive sqrt
         // function would cause a StackOverflowError.
         Apfloat sumOfSquaresOfDifferences = Apfloat.ZERO;
         for( int i = 0; i < sampleValues.length; i++ ) {
-            Apfloat difference = new Apfloat( sampleValues[ i ] ).subtract( estimate );
+            Apfloat difference = new Apfloat( sampleValues[ i ] ).multiply( multiplier ).subtract( estimate );
             sumOfSquaresOfDifferences = difference.multiply( difference );
         }
         Apfloat floatSumOfSquaresOfDifferences = new Apfloat( sumOfSquaresOfDifferences.toString(), 100 );
