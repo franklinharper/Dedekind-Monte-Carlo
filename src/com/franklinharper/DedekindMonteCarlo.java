@@ -12,21 +12,21 @@ import org.apfloat.ApintMath;
 public class DedekindMonteCarlo {
 
     // TODO
-    // send bill 5 days ( tues., wed, 1/2 thur., Fri May 16, Mon. 19, Tues. 20)
+    // send bill 5 days ( tues., wed, 1/2 thur., Fri May 16, Mon. 19, Tues. 20, Wed. 21)
 
     private static final boolean TRACE = false;
     private static final String version = "0.9";
 
     private static final Apfloat[] DEDEKIND_KNOWN_VALUES = {
-        new Apfloat( "2" ),
-        new Apfloat( "3" ),
-        new Apfloat( "6" ),
-        new Apfloat( "20" ),
-        new Apfloat( "168" ),
-        new Apfloat( "7581" ),
-        new Apfloat( "7828354" ),
-        new Apfloat( "2414682040998" ),
-        new Apfloat( "56130437228687557907788" ), };
+        new Apfloat( 2.0 ),
+        new Apfloat( 3.0 ),
+        new Apfloat( 6.0 ),
+        new Apfloat( 20.0 ),
+        new Apfloat( 168.0 ),
+        new Apfloat( 7581.0 ),
+        new Apfloat( 7828354.0 ),
+        new Apfloat( 2414682040998.0 ),
+        new Apfloat( 56130437228687557907788.0 ), };
 
     public static final Apint TWO = new Apint( 2 );
 
