@@ -115,7 +115,22 @@ public class DedekindMonteCarlo {
     }
 
     private static void printColumnHeaders() {
-        System.out.println("n\tD(n)\tKD(n)\tED(n)\tED(n)/D(n)\tED(n)/KD(n)\tnumber of iterations\tsample standard deviation\tcalculation time\tSW Version");
+        String columnNames[] = new String[] {
+            "n",
+            "D(n)",
+            "KD(n)",
+            "ED(n)",
+            "ED(n)/D(n)",
+            "ED(n)/KD(n)",
+            "number of iterations",
+            "sample standard deviation",
+            "calculation time",
+            "SW Version", };
+        for( String name : columnNames ) {
+            System.out.print( name + "\t" );
+        }
+        System.out.println();
+
     }
 
     private static void printResults( int n, Apfloat estimate, Apfloat standardDeviation, int nIterations, long startMillis ) {
