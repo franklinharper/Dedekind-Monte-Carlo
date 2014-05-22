@@ -15,7 +15,7 @@ public class DedekindMonteCarlo {
     // send bill 5 days ( tues., wed, 1/2 thur., Fri May 16, Mon. 19, Tues. 20, Wed. 21)
 
     private static final boolean TRACE = false;
-    private static final String version = "0.9";
+    private static final String version = "0.9.1";
 
     private static final Apfloat[] DEDEKIND_KNOWN_VALUES = {
         new Apfloat( 2.0 ),
