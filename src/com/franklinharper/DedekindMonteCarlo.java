@@ -1,8 +1,9 @@
 package com.franklinharper;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 
 import org.apfloat.Apfloat;
 import org.apfloat.ApfloatMath;
@@ -15,7 +16,7 @@ public class DedekindMonteCarlo {
     // send bill 5 days ( tues., wed, 1/2 thur., Fri May 16, Mon. 19, Tues. 20, Wed. 21)
 
     private static final boolean TRACE = false;
-    private static final String version = "0.9.1";
+    private static final String version = "0.9.2";
 
     private static final Apfloat[] DEDEKIND_KNOWN_VALUES = {
         new Apfloat( 2.0 ),
@@ -60,8 +61,8 @@ public class DedekindMonteCarlo {
         int[] belowMiddle = generateNTuplesOfRank_K( n, k - 1 );
         long[] sampleValues = new long[ nIterations ];
         for( int i = 0; i < nIterations; i++ ) {
-            int[] sampleSet = randomSample( random, middleRank );
-            trace( "sample " + Arrays.toString( sampleSet ) );
+            Set<Integer> sampleSet = randomSample( random, middleRank );
+            trace( "sample " + sampleSet );
             int X = calculateX( n, aboveMiddle, sampleSet );
             trace( "X: " + X );
             int Y = calculateY( n, belowMiddle, sampleSet );
@@ -190,7 +191,7 @@ public class DedekindMonteCarlo {
     * @param sample an array of n-tuples of rank k
     * @return
     */
-   static int calculateY( int n, int[] belowSample, int[] sample ) {
+   static int calculateY( int n, int[] belowSample, Set<Integer> sample ) {
        int Y = 0;
        for( int i = 0; i < belowSample.length; i++ ) {
            if( noneOfSuccessorsAreInSample( belowSample[ i ], n, sample ) ) {
@@ -206,7 +207,7 @@ public class DedekindMonteCarlo {
     * @param sample an array of n-tuples of rank k
     * @return true iff all successors of the predecessor are in the sample
     */
-    public static boolean noneOfSuccessorsAreInSample( int predecessor, int n, int[] sample ) {
+    public static boolean noneOfSuccessorsAreInSample( int predecessor, int n, Set<Integer> sample ) {
         int bitmask = 1;
         for( int i = 0; i < n; i++ ) {
             if( ( predecessor & bitmask ) == 0 ) {
@@ -227,7 +228,7 @@ public class DedekindMonteCarlo {
      * @param sample an array of n-tuples of rank k
      * @return
      */
-    static int calculateX( int n, int[] aboveSample, int[] sample ) {
+    static int calculateX( int n, int[] aboveSample, Set<Integer> sample ) {
         int X = 0;
         for( int i = 0; i < aboveSample.length; i++ ) {
             if( allPredecessorsAreInSample( aboveSample[ i ], n, sample ) ) {
@@ -243,7 +244,7 @@ public class DedekindMonteCarlo {
      * @param sample an array of n-tuples of rank k
      * @return true iff all predecessors of the successor are in the sample
      */
-    public static boolean allPredecessorsAreInSample( int successor, int n, int[] sample ) {
+    public static boolean allPredecessorsAreInSample( int successor, int n, Set<Integer> sample ) {
         int bitmask = 1;
         for( int i = 0; i < n ; i++ ) {
             if( ( successor & bitmask) != 0 ) {
@@ -257,17 +258,11 @@ public class DedekindMonteCarlo {
         return true;
     }
 
-    private static boolean contains( int searchValue, int[] nTuples ) {
-        // Could be optimized because nTuples is in lex order.
-        for( int i = 0; i < nTuples.length; i++ ) {
-            if( nTuples[ i ] == searchValue ) {
-                return true;
-            }
-        }
-        return false;
+    private static boolean contains( int searchValue, Set<Integer> nTuples ) {
+        return nTuples.contains( searchValue );
     }
 
-    private static int[] randomSample( Random random, int[] rank_K ) {
+    private static Set<Integer> randomSample( Random random, int[] rank_K ) {
         boolean[] includeInSample = new boolean[ rank_K.length ];
         int elementCount = 0;
         for( int i = 0; i < includeInSample.length; i++ ) {
@@ -276,12 +271,10 @@ public class DedekindMonteCarlo {
                 elementCount = elementCount + 1;
             }
         }
-        int[] randomSample = new int[ elementCount ];
-        int j = 0;
+        Set<Integer> randomSample = new HashSet<Integer>(elementCount);
         for( int i = 0; i < includeInSample.length; i++ ) {
             if( includeInSample[ i ] ) {
-                randomSample[ j ] = rank_K[ i ];
-                j = j + 1;
+                randomSample.add( rank_K[ i ] );
             }
         }
         return randomSample;

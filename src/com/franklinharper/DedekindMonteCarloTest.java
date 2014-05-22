@@ -3,7 +3,12 @@ package com.franklinharper;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apfloat.Apfloat;
 import org.apfloat.Apint;
@@ -23,32 +28,33 @@ public class DedekindMonteCarloTest {
     public void testAllPredecessorsAreInSample() {
         {
             int n = 4;
-            int successor = 11; // 1 above middle is rank 3
-                                // predecessors of 11 are 3, 9, 10
-            int[] sample = new int[] { 3, 9, 10 }; // => middle rank k is 2
+            // => middle rank k is 2
+            // 11 is of rank 3, which is 1 above the middle rank
+            int successor = 11;
+            // predecessors of 11 are 3, 9, 10
+            Set<Integer> sample = new HashSet<Integer>(Arrays.asList(3, 9, 10));
             assertTrue( DedekindMonteCarlo.allPredecessorsAreInSample( successor, n, sample ) );
         }
         {
             int n = 4;
-            int successor = 7;  // 1 above middle is rank 3
-                                // predecessors of 7 are 3, 5, 6
-            int[] sample = new int[] { 3, 5, 6, 9, 10 }; // => middle rank k is 2
+            // 7 is of rank 3, which is 1 above the middle rank
+            int successor = 7;
+            // predecessors of 7 are 3, 5, 6
+            Set<Integer> sample = new HashSet<Integer>(Arrays.asList( 3, 5, 6, 9, 10));
             assertTrue( DedekindMonteCarlo.allPredecessorsAreInSample( successor, n, sample ) );
         }
         {
             int n = 4;
-            int successor = 11; // 1 above middle is rank 3
-                                // predecessors of 11 are 3, 9, 10
-            int[] sample = new int[] { 3, 5, 9 }; // => middle rank k is 2
-                                                  // largest predecessor is missing
+            int successor = 11;
+            // The largest predecessor is missing.
+            Set<Integer> sample = new HashSet<Integer>(Arrays.asList( 3, 5, 9));
             assertFalse( DedekindMonteCarlo.allPredecessorsAreInSample( successor, n, sample ) );
         }
         {
             int n = 4;
-            int successor = 11; // 1 above middle is rank 3
-                                // predecessors of 11 are 3, 9, 10
-            int[] sample = new int[] { 5, 9, 10 };  // => middle rank k is 2
-                                                    // smallest predecessor is missing
+            int successor = 11;
+            // The smallest predecessor is missing.
+            Set< Integer > sample = new HashSet< Integer >( Arrays.asList( 5, 9, 10 ) );
             assertFalse( DedekindMonteCarlo.allPredecessorsAreInSample( successor, n, sample ) );
         }
     }
@@ -56,17 +62,23 @@ public class DedekindMonteCarloTest {
     @Test
     public void testCalculateX() {
         {
-            int n = 3; // => k = 1
-            int[] aboveSample = new int[] { 3, 6 }; // rank 2
-                                                    // all predecessors of 3 are in the sample
-                                                    // 6 is missing a predecessor (4)
-            int[] sample = new int[] { 1, 2 }; // rank 1
+            int n = 3;
+            // n-tuples of rank 2
+            int[] aboveSample = new int[] { 3, 6 };
+            // All predecessors of 3 are in the sample.
+            // 6 is missing a predecessor (4).
+            // n-tuples of rank 1
+            Set< Integer > sample = new HashSet< Integer >( Arrays.asList( 1, 2 ) );
             assertEquals( 1, DedekindMonteCarlo.calculateX( n, aboveSample, sample ) );
         }
         {
             int n = 4; // => k = 2
-            int[] aboveSample = new int[] { 7, 14 }; // rank 3: minimum and maximum elements
-            int[] sample = new int[] { 3, 5, 6, 10, 12 }; // rank 2
+
+            // n-tuples of rank 3, minimum and maximum elements
+            int[] aboveSample = new int[] { 7, 14 };
+
+            // n-tuples of rank 2
+            Set< Integer > sample = new HashSet< Integer >( Arrays.asList(  3, 5, 6, 10, 12 ) );
             assertEquals( 2, DedekindMonteCarlo.calculateX( n, aboveSample, sample ) );
         }
     }
@@ -74,40 +86,55 @@ public class DedekindMonteCarloTest {
     @Test
     public void testNoneOfSuccessorsAreInSample() {
         {
-            int n = 4; // k => 2
-            int predecessor = 1; // Minimal element of rank 1
-                               // successors of 1 are 3, 5, 9
-            int[] sample = new int[] { 6, 12 }; // => middle rank contains elements of rank 2
+            int n = 4;
+            // The "middle" rank k is 2.
+            // 1 is the Minimal element of rank 1
+            int predecessor = 1;
+            // successors of 1 are 3, 5, 9
+            // => rank k contains elements of rank 2
+            Set< Integer > sample = new HashSet< Integer >( Arrays.asList(  6, 12 ) );
             assertTrue( DedekindMonteCarlo.noneOfSuccessorsAreInSample( predecessor, n, sample ) );
         }
         {
-            int n = 4; // k => 2
-            int predecessor = 1; // Minimal element of rank 1
-                               // successors of 1 are 3, 5, 9
-            int[] sample = new int[] { 6, 9 }; // => middle rank contains elements of rank 2
+            int n = 4;
+            // The "middle" rank k is 2.
+            // 1 is the Minimal element of rank 1
+            int predecessor = 1;
+            // The successors of 1 are 3, 5, 9
+            // => rank k contains elements of rank 2
+            Set< Integer > sample = new HashSet< Integer >( Arrays.asList( 6, 9 ) );
             assertFalse( DedekindMonteCarlo.noneOfSuccessorsAreInSample( predecessor, n, sample ) );
         }
 
         {
-            int n = 7; // k => 3
-            int predecessor = 96; // Maximal element of rank 2
-                                  // successors of 96 are 97, 99, 100, 104, 112,
-            int[] sample = new int[] { 3, 5, 6, 9, 10, 12, 24 }; // => middle rank contains elements of rank 3
+            int n = 7;
+            // The "middle" rank k is 3.
+            // 96 is the maximal element of rank 2.
+            int predecessor = 96;
+            // successors of 96 are 97, 99, 100, 104, 112,
+            // => rank k contains elements of rank 2
+            Set< Integer > sample = new HashSet< Integer >( Arrays.asList(  3, 5, 6, 9, 10, 12, 24 ) );
             assertTrue( DedekindMonteCarlo.noneOfSuccessorsAreInSample( predecessor, n, sample ) );
         }
 
         {
-            int n = 7; // k => 3
-            int predecessor = 96; // Maximal element of rank 2
-                                  // successors of 96 are 97, 99, 100, 104, 112,
-            int[] sample = new int[] { 3, 5, 6, 9, 10, 12, 24, 112 }; // => middle rank contains elements of rank 3
+            int n = 7;
+            // The "middle" rank k is 3.
+            // 96 is the maximal element of rank 2.
+            int predecessor = 96;
+            // successors of 96 are 97, 99, 100, 104, 112,
+            // => rank k contains elements of rank 2
+            Set< Integer > sample = new HashSet< Integer >( Arrays.asList(  3, 5, 6, 9, 10, 12, 24, 112 ) );
             assertFalse( DedekindMonteCarlo.noneOfSuccessorsAreInSample( predecessor, n, sample ) );
         }
         {
-            int n = 7; // k => 3
-            int predecessor = 96; // Maximal element of rank 2
-                                  // successors of 96 are 97, 99, 100, 104, 112,
-            int[] sample = new int[] { 3, 5, 6, 9, 10, 12, 24, 97 }; // => middle rank contains elements of rank 3
+            int n = 7;
+            // The "middle" rank k is 3.
+            // 96 is the maximal element of rank 2.
+            int predecessor = 96;
+            // successors of 96 are 97, 99, 100, 104, 112,
+            // => rank k contains elements of rank 2
+            Set< Integer > sample = new HashSet< Integer >( Arrays.asList( 3, 5, 6, 9, 10, 12, 24, 97 ) );
             assertFalse( DedekindMonteCarlo.noneOfSuccessorsAreInSample( predecessor, n, sample ) );
         }
     }
@@ -115,35 +142,42 @@ public class DedekindMonteCarloTest {
     @Test
     public void testCalculateY() {
         {
-            int n = 4; // k => 2
-            int[] belowMiddlePredecessors = new int[] { 1, 8 }; // minimum and maximum elements of rank 1
+            int n = 4;
+            // The "middle" rank k is 2.
+            // The minimum and maximum elements of rank 1
+            int[] belowMiddlePredecessors = new int[] { 1, 8 };
             // Successors of 1: 3, 5, 9
             // Successors of 8: 9, 10, 12
-            int[] sample = new int[] { 3, 9 }; // rank 2
+            Set< Integer > sample = new HashSet< Integer >( Arrays.asList( 3, 9 ) );
             assertEquals( 0, DedekindMonteCarlo.calculateY( n, belowMiddlePredecessors, sample ) );
         }
         {
-            int n = 4; // k => 2
-            int[] belowMiddlePredecessors = new int[] { 1, 8 }; // minimum and maximum elements of rank 1
+            int n = 4;
+            // The "middle" rank k is 2.
+            // The minimum and maximum elements of rank 1
+            int[] belowMiddlePredecessors = new int[] { 1, 8 };
             // Successors of 1: 3, 5, 9
             // Successors of 8: 9, 10, 12
-            int[] sample = new int[] { 6, 10, 12 }; // rank 2
+            Set< Integer > sample = new HashSet< Integer >( Arrays.asList( 6, 10, 12 ) );
             assertEquals( 1, DedekindMonteCarlo.calculateY( n, belowMiddlePredecessors, sample ) );
         }
         {
-            int n = 4; // k => 2
-            int[] belowMiddlePredecessors = new int[] { 1, 8 }; // minimum and maximum elements of rank 1
+            int n = 4;
+            // The "middle" rank k is 2.
+            // The minimum and maximum elements of rank 1
+            int[] belowMiddlePredecessors = new int[] { 1, 8 };
             // Successors of 1: 3, 5, 9
             // Successors of 8: 9, 10, 12
-            int[] sample = new int[] { 9, 12 }; // rank 2
+            Set< Integer > sample = new HashSet< Integer >( Arrays.asList( 9, 12 ) );
             assertEquals( 0, DedekindMonteCarlo.calculateY( n, belowMiddlePredecessors, sample ) );
         }
         {
-            int n = 4; // k => 2
-            int[] belowMiddlePredecessors = new int[] { 1, 8 }; // minimum and maximum elements of rank 1
+            int n = 4;
+            // The minimum and maximum elements of rank 1
+            int[] belowMiddlePredecessors = new int[] { 1, 8 };
             // Successors of 1: 3, 5, 9
             // Successors of 8: 9, 10, 12
-            int[] sample = new int[] { 6 }; // rank 2
+            Set< Integer > sample = new HashSet< Integer >( Arrays.asList( 6 ) );
             assertEquals( 2, DedekindMonteCarlo.calculateY( n, belowMiddlePredecessors, sample ) );
         }
     }
