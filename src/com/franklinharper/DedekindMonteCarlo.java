@@ -18,7 +18,7 @@ public class DedekindMonteCarlo {
     private static final boolean TRACE = false;
     private static final String version = "0.9.2";
 
-    private static final Apfloat[] DEDEKIND_KNOWN_VALUES = {
+    static final Apfloat[] DEDEKIND_KNOWN_VALUES = {
         new Apfloat( 2.0 ),
         new Apfloat( 3.0 ),
         new Apfloat( 6.0 ),
@@ -35,14 +35,13 @@ public class DedekindMonteCarlo {
         if( !TRACE ) {
             printColumnHeaders();
         }
-        for( int n = 10; n <= 13; n++ ) {
-            DedekindMonteCarlo.dedekindEstimation( n, 1000000 );
-        }
-//      DedekindMonteCarlo.dedekindEstimation( 14, 100000 );
+//        for( int n = 2; n <= 9; n++ ) {
+//            DedekindMonteCarlo.dedekindEstimation( n, 1000000 );
+//        }
+        System.out.println( DedekindMonteCarlo.dedekindEstimation( 3, 4000 ) );
     }
 
-
-    public static void dedekindEstimation( int n, int nIterations ) {
+    public static DedekindResult dedekindEstimation( int n, int nIterations ) {
         final long startMillis = System.currentTimeMillis();
         trace( "n: " + n );
         trace( String.format( "iterations: %4.0E", (double) nIterations ) );
@@ -77,7 +76,7 @@ public class DedekindMonteCarlo {
             sampleValues[ i ] = sample;
             trace( "sampleValue " + i + ": " + sampleValues[ i ] );
         }
-        trace( "time to calculate sampleValues: " + elapsedTime( startMillis ) );
+        trace( "time to calculate sampleValues: " + formatElapsedTime( startMillis ) );
 
         final long startSumSampleValues = System.currentTimeMillis();
         // The estimated D(n) is ( sumSamples * nChooseK ) / numberOfSamples
@@ -85,7 +84,7 @@ public class DedekindMonteCarlo {
         for( int i = 0; i < sampleValues.length; i++ ) {
             sumSampleValues = sumSampleValues.add( new Apint( sampleValues[ i ] ) );
         }
-        trace( "time to calculate sumSampleValues: " + elapsedTime( startSumSampleValues ) );
+        trace( "time to calculate sumSampleValues: " + formatElapsedTime( startSumSampleValues ) );
 
         Apint multiplier = ApintMath.pow( TWO, binomial( n, k ) );
         trace( "multiplier: " + multiplier );
@@ -93,9 +92,16 @@ public class DedekindMonteCarlo {
 
         final long startStandardDeviation = System.currentTimeMillis();
         Apfloat standardDeviation = standardDeviation( sampleValues, multiplier, estimate );
-        trace( "time to calculate standardDeviation: " + elapsedTime( startStandardDeviation ) );
+        trace( "time to calculate standardDeviation: " + formatElapsedTime( startStandardDeviation ) );
 
-        printResults( n, estimate, standardDeviation, nIterations, startMillis );
+        DedekindResult result = new DedekindResult();
+        result.n = n;
+        result.estimate = estimate;
+        result.standardDeviation = standardDeviation;
+        result.nIterations = nIterations;
+        result.elapsedMillis = System.currentTimeMillis() - startMillis;
+        result.korshunov = korshunov( n );
+        return result;
     }
 
     static Apfloat standardDeviation( long[] sampleValues, Apint multiplier, Apfloat estimate ) {
@@ -103,9 +109,16 @@ public class DedekindMonteCarlo {
         // square root would fail for n > 12, because The recursive sqrt
         // function would cause a StackOverflowError.
         Apfloat sumOfSquaresOfDifferences = Apfloat.ZERO;
-        for( int i = 0; i < sampleValues.length; i++ ) {
-            Apfloat difference = new Apfloat( sampleValues[ i ] ).multiply( multiplier ).subtract( estimate );
-            sumOfSquaresOfDifferences = sumOfSquaresOfDifferences.add( difference.multiply( difference ) );
+        Apfloat difference = Apfloat.ZERO;
+        try {
+            for( int i = 0; i < sampleValues.length; i++ ) {
+                difference = new Apfloat( sampleValues[ i ] ).multiply( multiplier ).subtract( estimate );
+                sumOfSquaresOfDifferences = sumOfSquaresOfDifferences.add( difference.multiply( difference ) );
+            }
+        } catch( ArrayIndexOutOfBoundsException e ) {
+            System.out.println( "Caught ArrayIndexOutOfBoundsException!" );
+            System.out.println( "difference: " + difference );
+            return new Apfloat( -1 );
         }
         Apfloat floatSumOfSquaresOfDifferences = new Apfloat( sumOfSquaresOfDifferences.toString(), 100 );
         Apfloat variance = floatSumOfSquaresOfDifferences.divide( new Apint( sampleValues.length - 1 ) );
@@ -134,43 +147,6 @@ public class DedekindMonteCarlo {
 
     }
 
-    private static void printResults( int n, Apfloat estimate, Apfloat standardDeviation, int nIterations, long startMillis ) {
-        String outputFormat = "%.10s";
-        printTsv( n );
-        if( n < DEDEKIND_KNOWN_VALUES.length ) {
-            printTsv( String.format( outputFormat, DEDEKIND_KNOWN_VALUES[ n ] ) );
-        } else {
-            printTsv( "N/A," );
-        }
-        Apfloat kdn = korshunov( n );
-        printTsv( String.format( outputFormat, kdn ) );
-        printTsv( String.format( outputFormat, estimate ) );
-        if( n < DEDEKIND_KNOWN_VALUES.length ) {
-            trace( "estimate.precision: " + estimate.precision() );
-            Apfloat dn = DEDEKIND_KNOWN_VALUES[ n ];
-            trace( "dn.precision: " + dn.precision() );
-            Apfloat ratio = estimate.divide( DEDEKIND_KNOWN_VALUES[ n ] );
-            printTsv( String.format( outputFormat, ratio ) );
-        } else {
-            printTsv("N/A,");
-        }
-        printTsv( String.format( outputFormat, estimate.divide( kdn ) ) );
-        printTsv( String.format( outputFormat, new Apfloat( nIterations ) ) );
-        printTsv( String.format( outputFormat, standardDeviation ) );
-        printTsv( elapsedTime( startMillis ) );
-        printTsv( version );
-        System.out.println();
-    }
-
-
-    private static String elapsedTime( long startMillis ) {
-        long elapsedMillis = System.currentTimeMillis() - startMillis;
-        long ms = elapsedMillis % 1000;
-        long s = (elapsedMillis / 1000) % 60;
-        long m = (elapsedMillis / (1000 * 60)) % 60;
-        long h = (elapsedMillis / (1000 * 60 * 60)) % 24;
-        return String.format("%dh:%dm:%ds:%dms", h, m, s, ms );
-    }
 
     private static long pow2( int integer ) {
         // Shifting all the bits left by one position multiplies by 2.
@@ -331,7 +307,7 @@ public class DedekindMonteCarlo {
         }
         trace( String.format( "kd(%d): %s", n, kdn ) );
         trace( String.format( "kd(%d).precision(): %s", n, kdn.precision() ) );
-        trace( String.format( "time to calculate kd(%d): %s", n, elapsedTime( start ) ) );
+        trace( String.format( "time to calculate kd(%d): %s", n, formatElapsedTime( start ) ) );
         return kdn;
     }
 
@@ -375,11 +351,63 @@ public class DedekindMonteCarlo {
         return binomial( total - 1, choose - 1 ) + binomial( total - 1, choose );
     }
 
-    public static void printTsv( Object s ) {
-        System.out.print( s + "\t" );
+    private static String formatElapsedTime( long elapsedMillis ) {
+        long ms = elapsedMillis % 1000;
+        long s = (elapsedMillis / 1000) % 60;
+        long m = (elapsedMillis / (1000 * 60)) % 60;
+        long h = (elapsedMillis / (1000 * 60 * 60)) % 24;
+        return String.format("%dh:%dm:%ds:%dms", h, m, s, ms );
     }
 
-    public static void printTsv( int integer ) {
-        System.out.print( integer + "\t" );
+    static class DedekindResult {
+        int n;
+        Apfloat estimate;
+        Apfloat standardDeviation;
+        int nIterations;
+        long elapsedMillis;
+        Apfloat korshunov;
+
+        @Override
+        public String toString() {
+
+            StringBuilder result = new StringBuilder( 200 );
+            String outputFormat = "%.10s";
+            addTsv( result, n );
+            if( n < DEDEKIND_KNOWN_VALUES.length ) {
+                addTsv( result, String.format( outputFormat, DEDEKIND_KNOWN_VALUES[ n ] ) );
+            } else {
+                addTsv( result, "N/A," );
+            }
+            addTsv( result, String.format( outputFormat, korshunov ) );
+            addTsv( result, String.format( outputFormat, estimate ) );
+            if( n < DEDEKIND_KNOWN_VALUES.length ) {
+                trace( "estimate.precision: " + estimate.precision() );
+                Apfloat dn = DEDEKIND_KNOWN_VALUES[ n ];
+                trace( "dn.precision: " + dn.precision() );
+                Apfloat ratio = estimate.divide( DEDEKIND_KNOWN_VALUES[ n ] );
+                addTsv( result, String.format( outputFormat, ratio ) );
+            } else {
+                addTsv( result, "N/A,");
+            }
+            addTsv( result, String.format( outputFormat, estimate.divide( korshunov ) ) );
+            addTsv( result, String.format( outputFormat, new Apfloat( nIterations ) ) );
+            addTsv( result, String.format( outputFormat, standardDeviation ) );
+            addTsv( result, formatElapsedTime( elapsedMillis ) );
+            addTsv( result, version );
+            System.out.println();
+            return result.toString();
+        }
+
+        public static void addTsv(StringBuilder sb, Object o ) {
+            sb.append( o );
+            sb.append( "\t" );
+        }
+
+        public static void addTsv( StringBuilder sb, int integer ) {
+            sb.append( integer );
+            sb.append( "\t" );
+        }
+
     }
+
 }
