@@ -1,4 +1,4 @@
-package com.franklinharper;
+package com.franklinharper.dedekindMonteCarlo;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -12,6 +12,8 @@ import java.util.Set;
 import org.apfloat.Apfloat;
 import org.apfloat.Apint;
 import org.junit.Test;
+
+import com.franklinharper.dedekindMonteCarlo.DedekindMonteCarlo;
 
 public class DedekindMonteCarloUnitTests {
 
@@ -214,7 +216,7 @@ public class DedekindMonteCarloUnitTests {
             Apfloat estimate = new Apfloat( 5 );
             Apfloat expectedResult = new Apfloat( 2.1380899352994 );
             Apfloat tolerance = expectedResult.multiply( new Apfloat( 0.00000000001 ) );
-            Apfloat result = DedekindMonteCarlo.standardDeviation( samples, multiplier , estimate );
+            Apfloat result = DedekindMonteCarlo.standardDeviation( samples, multiplier , estimate, samples.length );
             checkResult( expectedResult, tolerance, result );
         }
         {
@@ -223,7 +225,7 @@ public class DedekindMonteCarloUnitTests {
             Apfloat estimate = new Apfloat( 512 );
             Apfloat expectedResult = new Apfloat( 512 );
             Apfloat tolerance = expectedResult.multiply( new Apfloat( 0.0001 ) );
-            Apfloat result = DedekindMonteCarlo.standardDeviation( samples, multiplier , estimate );
+            Apfloat result = DedekindMonteCarlo.standardDeviation( samples, multiplier , estimate, samples.length );
             checkResult( expectedResult, tolerance, result );
         }
         {
@@ -232,7 +234,18 @@ public class DedekindMonteCarloUnitTests {
             Apfloat estimate =  new Apfloat( 30000 );
             Apfloat expectedResult = new Apfloat( 1000 );
             Apfloat tolerance = expectedResult.multiply( new Apfloat( 0.0001 ) );
-            Apfloat result = DedekindMonteCarlo.standardDeviation( samples, multiplier , estimate );
+            Apfloat result = DedekindMonteCarlo.standardDeviation( samples, multiplier , estimate, samples.length );
+            checkResult( expectedResult, tolerance, result );
+        }
+        {
+            // Only the first 3 element of the samples array contains a valid sample.
+            long[] samples = { 30, 31, 29, -1, -1, -1 };
+            int sampleCount = 3;
+            Apint multiplier = new Apint( 1000 );
+            Apfloat estimate = new Apfloat( 30000 );
+            Apfloat expectedResult = new Apfloat( 1000 );
+            Apfloat tolerance = expectedResult.multiply( new Apfloat( 0.0001 ) );
+            Apfloat result = DedekindMonteCarlo.standardDeviation( samples, multiplier, estimate, sampleCount );
             checkResult( expectedResult, tolerance, result );
         }
     }
