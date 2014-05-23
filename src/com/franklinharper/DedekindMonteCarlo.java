@@ -128,30 +128,44 @@ public class DedekindMonteCarlo {
         return sqrt;
     }
 
-    private static void printColumnHeaders() {
-        String columnNames[] = new String[] {
-            "n",
-            "D(n)",
-            "KD(n)",
-            "ED(n)",
-            "ED(n)/D(n)",
-            "ED(n)/KD(n)",
-            "number of iterations",
-            "sample standard deviation",
-            "calculation time",
-            "SW Version", };
-        for( String name : columnNames ) {
-            System.out.print( name + "\t" );
-        }
-        System.out.println();
+    private static final long[] POWERS_OF_2 = {
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128,
+        256,
+        512,
+        1024,
+        2048,
+        4096,
+        8192,
+        16384,
+        32768,
+        65536,
+        131072,
+        262144,
+        524288,
+        1048576,
+        2097152,
+        4194304,
+        8388608,
+        16777216,
+        33554432,
+        67108864,
+        134217728,
+        268435456,
+        536870912,
+        1073741824,
+        2147483648L,
+        4294967296L,
+    };
 
-    }
-
-
-    private static long pow2( int integer ) {
-        // Shifting all the bits left by one position multiplies by 2.
-        // This works iff no high order bits are shifted out.
-        return 1l << ( integer );
+    public static long pow2( int integer ) {
+        return POWERS_OF_2[ integer ];
     }
 
     private static void trace( String s ) {
@@ -349,6 +363,24 @@ public class DedekindMonteCarlo {
         if( choose == 0 || choose == total )
             return 1;
         return binomial( total - 1, choose - 1 ) + binomial( total - 1, choose );
+    }
+
+    private static void printColumnHeaders() {
+        String columnNames[] = new String[] {
+            "n",
+            "D(n)",
+            "KD(n)",
+            "ED(n)",
+            "ED(n)/D(n)",
+            "ED(n)/KD(n)",
+            "number of iterations",
+            "sample standard deviation",
+            "calculation time",
+            "SW Version", };
+        for( String name : columnNames ) {
+            System.out.print( name + "\t" );
+        }
+        System.out.println();
     }
 
     private static String formatElapsedTime( long elapsedMillis ) {
