@@ -13,9 +13,7 @@ import org.apfloat.Apfloat;
 import org.apfloat.Apint;
 import org.junit.Test;
 
-import com.franklinharper.DedekindMonteCarlo.DedekindResult;
-
-public class DedekindMonteCarloTest {
+public class DedekindMonteCarloUnitTests {
 
     @Test
     public void testGenerateNTuplesOfRank_K() {
@@ -184,6 +182,24 @@ public class DedekindMonteCarloTest {
     }
 
     @Test
+    public void testPow2Nominal() {
+        assertEquals( 1, DedekindMonteCarlo.pow2( 0 ) );
+        assertEquals( 2, DedekindMonteCarlo.pow2( 1 ) );
+        assertEquals( 4, DedekindMonteCarlo.pow2( 2 ) );
+        assertEquals( 4294967296L, DedekindMonteCarlo.pow2( 32 ) );
+    }
+
+    @Test(expected = ArrayIndexOutOfBoundsException.class)
+    public void testPow2Negative() {
+        DedekindMonteCarlo.pow2( -1 );
+    }
+
+    @Test(expected = ArrayIndexOutOfBoundsException.class)
+    public void testPow2AboveMax() {
+        DedekindMonteCarlo.pow2( 33 );
+    }
+
+    @Test
     public void testBinomial() {
         assertEquals( 1, DedekindMonteCarlo.binomial( 1, 1 ) );
         assertEquals( 2, DedekindMonteCarlo.binomial( 2, 1 ) );
@@ -341,54 +357,6 @@ public class DedekindMonteCarloTest {
         }
     }
 
-    @Test
-    public void testDedekind2() {
-        checkDedekindEstimate( 2, 1000 );
-    }
-
-    @Test
-    public void testDedekind3() {
-        checkDedekindEstimate( 2, 1000 );
-    }
-
-    @Test
-    public void testDedekind4() {
-        checkDedekindEstimate( 2, 1000 );
-    }
-
-    @Test
-    public void testDedekind5() {
-        checkDedekindEstimate( 5, 100000 );
-    }
-
-    @Test
-    public void testDedekind6() {
-        checkDedekindEstimate( 6, 100000 );
-    }
-
-    @Test
-    public void testDedekind7() {
-        checkDedekindEstimate( 7, 10000000 );
-    }
-
-    @Test
-    public void testDedekind8() {
-        checkDedekindEstimate( 8, 1000000 );
-    }
-
-    private void checkDedekindEstimate(int n, int nIterations) {
-        Apfloat[] knownValues = DedekindMonteCarlo.DEDEKIND_KNOWN_VALUES;
-        Apfloat tolerancePercentage = new Apfloat( 0.05 );
-        Apfloat knownValue = knownValues[ n ];
-        System.out.println( "n: " + n );
-        DedekindResult result = DedekindMonteCarlo.dedekindEstimation( n, nIterations );
-        System.out.println("tolerancePercentage: " + tolerancePercentage );
-        Apfloat tolerance = knownValue.multiply( tolerancePercentage );
-        System.out.println("tolerance: " + tolerance );
-        System.out.println("estimate: " + result.estimate );
-        System.out.println("estimate/knownValue: " + result.estimate.divide( knownValue ) );
-        checkResult( knownValue, tolerance, result.estimate );
-    }
 
 //    @Test
 //    public void testSquareHugeNumber() {
@@ -397,7 +365,7 @@ public class DedekindMonteCarloTest {
 //        assertNotNull( hugeSquared );
 //    }
 
-    private void checkResult( Apfloat expected, Apfloat tolerance, Apfloat actual ) {
+    public static void checkResult( Apfloat expected, Apfloat tolerance, Apfloat actual ) {
         Apfloat lowestExpected = expected.subtract( tolerance );
         int compareLowestExpected = actual.compareTo( lowestExpected );
         assertTrue( "Expected > " + lowestExpected + " Actual: " + actual, compareLowestExpected == 1 || compareLowestExpected == 0  );
